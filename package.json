@@ -1,0 +1,43 @@
+{
+  "name": "bityield-monorepo",
+  "version": "1.0.0",
+  "description": "BitYield - AI-powered sBTC yield optimization platform (Monorepo)",
+  "private": true,
+  "workspaces": [
+    "packages/contracts",
+    "packages/backend",
+    "packages/frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/backend & npm run dev --workspace=packages/frontend",
+    "dev:contracts": "npm run test:watch --workspace=packages/contracts",
+    "dev:backend": "npm run dev --workspace=packages/backend",
+    "dev:frontend": "npm run dev --workspace=packages/frontend",
+    "build": "npm run build --workspaces --if-present",
+    "build:contracts": "npm run test --workspace=packages/contracts",
+    "build:backend": "npm run build --workspace=packages/backend",
+    "build:frontend": "npm run build --workspace=packages/frontend",
+    "test": "npm run test --workspaces --if-present",
+    "test:contracts": "npm run test --workspace=packages/contracts",
+    "test:backend": "npm run test --workspace=packages/backend",
+    "lint": "npm run lint --workspaces --if-present",
+    "clean": "rm -rf packages/*/node_modules packages/*/dist packages/*/.next node_modules",
+    "install:all": "npm install"
+  },
+  "keywords": [
+    "bitcoin",
+    "defi",
+    "sbtc",
+    "stacks",
+    "yield-optimization",
+    "ai",
+    "clarinet",
+    "clarity"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.4.0",
+    "typescript": "^5.7.3"
+  }
+}
