@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { YieldOpportunity } from '@/types';
-import { getYields } from '@/services/apiService';
+import { useState, useEffect, useCallback } from "react";
+import { YieldOpportunity } from "@/types";
+import { getYields } from "@/services/apiService";
 
 export const useYields = () => {
   const [yields, setYields] = useState<YieldOpportunity[]>([]);
@@ -20,7 +20,7 @@ export const useYields = () => {
       setYields(data);
       setLastUpdated(new Date());
     } catch (err) {
-      setError('Failed to fetch yield data');
+      setError("Failed to fetch yield data");
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -50,13 +50,21 @@ export const useYields = () => {
     return [...yields].sort((a, b) => b.tvl - a.tvl);
   }, [yields]);
 
-  const filterByRisk = useCallback((riskLevel: 'low' | 'medium' | 'high') => {
-    return yields.filter((y) => y.riskLevel === riskLevel);
-  }, [yields]);
+  const filterByRisk = useCallback(
+    (riskLevel: "low" | "medium" | "high") => {
+      return yields.filter((y) => y.riskLevel === riskLevel);
+    },
+    [yields]
+  );
 
-  const filterByProtocol = useCallback((protocol: string) => {
-    return yields.filter((y) => y.protocol.toLowerCase() === protocol.toLowerCase());
-  }, [yields]);
+  const filterByProtocol = useCallback(
+    (protocol: string) => {
+      return yields.filter(
+        (y) => y.protocol.toLowerCase() === protocol.toLowerCase()
+      );
+    },
+    [yields]
+  );
 
   return {
     yields,

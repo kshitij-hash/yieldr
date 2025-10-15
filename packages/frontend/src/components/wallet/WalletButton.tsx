@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Wallet, LogOut, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import { Wallet, LogOut, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,22 +10,52 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useWallet } from '@/contexts/WalletContext';
+} from "@/components/ui/dropdown-menu";
+import { useWallet } from "@/contexts/WalletContext";
+import { Spinner } from "@/components/ui/spinner";
 
 export const WalletButton: React.FC = () => {
-  const { isConnected, address, stxBalance, sbtcBalance, connect, disconnect, refreshBalances, isLoading } = useWallet();
+  const {
+    isConnected,
+    address,
+    stxBalance,
+    sbtcBalance,
+    connect,
+    disconnect,
+    refreshBalances,
+    isLoading,
+  } = useWallet();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Truncate address for display
   const truncateAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshBalances();
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
   if (!isConnected) {
     return (
-      <Button onClick={connect} disabled={isLoading}>
-        <Wallet className="mr-2 h-4 w-4" />
-        Connect Wallet
+      <Button
+        onClick={connect}
+        disabled={isLoading}
+        className="transition-smooth hover:scale-105"
+      >
+        {isLoading ? (
+          <>
+            <Spinner size="sm" className="mr-2" />
+            Connecting...
+          </>
+        ) : (
+          <>
+            <Wallet className="mr-2 h-4 w-4" />
+            Connect Wallet
+          </>
+        )}
       </Button>
     );
   }
@@ -35,7 +65,7 @@ export const WalletButton: React.FC = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="outline">
           <Wallet className="mr-2 h-4 w-4" />
-          {address ? truncateAddress(address) : 'Connected'}
+          {address ? truncateAddress(address) : "Connected"}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
@@ -43,7 +73,9 @@ export const WalletButton: React.FC = () => {
         <DropdownMenuSeparator />
         <div className="px-2 py-2 text-sm">
           <p className="font-medium mb-1">Address</p>
-          <p className="text-muted-foreground font-mono text-xs break-all">{address}</p>
+          <p className="text-muted-foreground font-mono text-xs break-all">
+            {address}
+          </p>
         </div>
         <DropdownMenuSeparator />
         <div className="px-2 py-2 text-sm space-y-1">
@@ -57,11 +89,16 @@ export const WalletButton: React.FC = () => {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={refreshBalances}>
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh Balances
+        <DropdownMenuItem onClick={handleRefresh} disabled={isRefreshing}>
+          <RefreshCw
+            className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+          />
+          {isRefreshing ? "Refreshing..." : "Refresh Balances"}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={disconnect}>
+        <DropdownMenuItem
+          onClick={disconnect}
+          className="text-destructive focus:text-destructive"
+        >
           <LogOut className="mr-2 h-4 w-4" />
           Disconnect
         </DropdownMenuItem>

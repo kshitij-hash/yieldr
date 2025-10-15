@@ -1,13 +1,13 @@
 // API Service for backend communication
-import axios, { AxiosInstance } from 'axios';
-import { YieldOpportunity, Recommendation, UserPreferences } from '@/types';
+import axios, { AxiosInstance } from "axios";
+import { YieldOpportunity, Recommendation, UserPreferences } from "@/types";
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -26,7 +26,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
+    console.error("API Error:", error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
@@ -66,8 +66,8 @@ interface YieldsApiResponse {
 // Get all yield opportunities
 export const getYields = async (): Promise<YieldOpportunity[]> => {
   try {
-    const response = await apiClient.get<YieldsApiResponse>('/api/yields');
-    
+    const response = await apiClient.get<YieldsApiResponse>("/api/yields");
+
     // Extract and flatten all opportunities from all protocols
     if (response.data?.data?.protocols) {
       const allOpportunities = response.data.data.protocols.flatMap(
@@ -75,18 +75,22 @@ export const getYields = async (): Promise<YieldOpportunity[]> => {
       );
       return allOpportunities;
     }
-    
+
     return [];
   } catch (error) {
-    console.error('Error fetching yields:', error);
+    console.error("Error fetching yields:", error);
     return [];
   }
 };
 
 // Get yields for specific protocol
-export const getProtocolYields = async (protocol: string): Promise<YieldOpportunity[]> => {
+export const getProtocolYields = async (
+  protocol: string
+): Promise<YieldOpportunity[]> => {
   try {
-    const response = await apiClient.get<YieldOpportunity[]>(`/api/yields/${protocol}`);
+    const response = await apiClient.get<YieldOpportunity[]>(
+      `/api/yields/${protocol}`
+    );
     return response.data;
   } catch (error) {
     console.error(`Error fetching ${protocol} yields:`, error);
@@ -129,7 +133,10 @@ export const getRecommendation = async (
   preferences: UserPreferences
 ): Promise<Recommendation | null> => {
   try {
-    const response = await apiClient.post<{ success: boolean; data: BackendRecommendation }>('/api/recommend', preferences);
+    const response = await apiClient.post<{
+      success: boolean;
+      data: BackendRecommendation;
+    }>("/api/recommend", preferences);
 
     if (!response.data?.data) {
       return null;
@@ -145,12 +152,12 @@ export const getRecommendation = async (
         expectedApy: backendData.expectedAPY,
       },
       reasoning: backendData.reasoning,
-      alternatives: backendData.alternatives.map(alt => ({
+      alternatives: backendData.alternatives.map((alt) => ({
         protocol: alt.protocol,
         pool: alt.poolName,
         apy: alt.apy,
-        pros: alt.pros ? alt.pros.split('\n').filter(Boolean) : [alt.pros],
-        cons: alt.cons ? alt.cons.split('\n').filter(Boolean) : [alt.cons],
+        pros: alt.pros ? alt.pros.split("\n").filter(Boolean) : [alt.pros],
+        cons: alt.cons ? alt.cons.split("\n").filter(Boolean) : [alt.cons],
       })),
       riskAssessment: backendData.riskAssessment,
       projectedEarnings: backendData.projectedEarnings,
@@ -159,29 +166,32 @@ export const getRecommendation = async (
 
     return recommendation;
   } catch (error) {
-    console.error('Error fetching recommendation:', error);
+    console.error("Error fetching recommendation:", error);
     return null;
   }
 };
 
 // Get health status
-export const getHealth = async (): Promise<{ status: string; timestamp: number }> => {
+export const getHealth = async (): Promise<{
+  status: string;
+  timestamp: number;
+}> => {
   try {
-    const response = await apiClient.get('/api/health');
+    const response = await apiClient.get("/api/health");
     return response.data;
   } catch (error) {
-    console.error('Error checking health:', error);
-    return { status: 'unhealthy', timestamp: Date.now() };
+    console.error("Error checking health:", error);
+    return { status: "unhealthy", timestamp: Date.now() };
   }
 };
 
 // Clear cache (admin function)
 export const clearCache = async (): Promise<boolean> => {
   try {
-    await apiClient.delete('/api/cache');
+    await apiClient.delete("/api/cache");
     return true;
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    console.error("Error clearing cache:", error);
     return false;
   }
 };

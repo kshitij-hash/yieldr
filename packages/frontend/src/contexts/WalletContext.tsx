@@ -1,7 +1,13 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { WalletState } from '@/types';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import { WalletState } from "@/types";
 import {
   connectWallet as connectWalletService,
   disconnectWallet as disconnectWalletService,
@@ -9,7 +15,7 @@ import {
   getUserAddress,
   fetchStxBalance,
   fetchSbtcBalance,
-} from '@/services/walletService';
+} from "@/services/walletService";
 
 interface WalletContextType extends WalletState {
   connect: () => void;
@@ -20,13 +26,16 @@ interface WalletContextType extends WalletState {
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
-export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [walletState, setWalletState] = useState<WalletState>({
     isConnected: false,
     address: null,
     stxBalance: 0,
     sbtcBalance: 0,
-    network: (process.env.NEXT_PUBLIC_NETWORK as 'testnet' | 'mainnet') || 'testnet',
+    network:
+      (process.env.NEXT_PUBLIC_NETWORK as "testnet" | "mainnet") || "testnet",
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,7 +55,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         sbtcBalance,
       }));
     } catch (error) {
-      console.error('Error refreshing balances:', error);
+      console.error("Error refreshing balances:", error);
     }
   }, [walletState.address]);
 
@@ -78,7 +87,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               sbtcBalance,
             }));
           } catch (error) {
-            console.error('Error fetching balances:', error);
+            console.error("Error fetching balances:", error);
           }
         }
       }
@@ -126,12 +135,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               sbtcBalance,
             }));
           } catch (error) {
-            console.error('Error fetching balances:', error);
+            console.error("Error fetching balances:", error);
           }
         }
       });
     } catch (error) {
-      console.error('Error connecting wallet:', error);
+      console.error("Error connecting wallet:", error);
     }
   }, []);
 
@@ -143,7 +152,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       address: null,
       stxBalance: 0,
       sbtcBalance: 0,
-      network: (process.env.NEXT_PUBLIC_NETWORK as 'testnet' | 'mainnet') || 'testnet',
+      network:
+        (process.env.NEXT_PUBLIC_NETWORK as "testnet" | "mainnet") || "testnet",
     });
   }, []);
 
@@ -166,7 +176,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 export const useWallet = () => {
   const context = useContext(WalletContext);
   if (context === undefined) {
-    throw new Error('useWallet must be used within a WalletProvider');
+    throw new Error("useWallet must be used within a WalletProvider");
   }
   return context;
 };

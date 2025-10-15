@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { VaultBalance } from '@/types';
-import { getVaultData, isContractPaused } from '@/services/contractService';
-import { useWallet } from '@/contexts/WalletContext';
+import { useState, useEffect, useCallback } from "react";
+import { VaultBalance } from "@/types";
+import { getVaultData, isContractPaused } from "@/services/contractService";
+import { useWallet } from "@/contexts/WalletContext";
 
 export const useContract = () => {
   const { address, isConnected } = useWallet();
@@ -34,10 +34,10 @@ export const useContract = () => {
     } catch (err) {
       // Check if error is due to contract not existing
       const errorMessage = err instanceof Error ? err.message : String(err);
-      if (errorMessage.includes('NoSuchContract')) {
-        setError('CONTRACT_NOT_DEPLOYED');
+      if (errorMessage.includes("NoSuchContract")) {
+        setError("CONTRACT_NOT_DEPLOYED");
       } else {
-        setError('Failed to fetch vault data');
+        setError("Failed to fetch vault data");
       }
       console.error(err);
     } finally {

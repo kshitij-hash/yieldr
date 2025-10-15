@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Loader2, Gift } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Loader2, Gift } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -14,24 +14,24 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useWallet } from '@/contexts/WalletContext';
-import { depositFor, getExplorerUrl } from '@/services/contractService';
-import { toast } from 'sonner';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useWallet } from "@/contexts/WalletContext";
+import { depositFor, getExplorerUrl } from "@/services/contractService";
+import { toast } from "sonner";
 
 // Form validation schema
 const formSchema = z.object({
   recipient: z
     .string()
-    .min(1, { message: 'Recipient address is required' })
-    .regex(/^S[0-9A-Z]{39}$/, { message: 'Invalid Stacks address' }),
+    .min(1, { message: "Recipient address is required" })
+    .regex(/^S[0-9A-Z]{39}$/, { message: "Invalid Stacks address" }),
   amount: z
     .number()
-    .min(0.1, { message: 'Minimum deposit is 0.1 sBTC' })
-    .max(1000, { message: 'Maximum deposit is 1000 sBTC' }),
+    .min(0.1, { message: "Minimum deposit is 0.1 sBTC" })
+    .max(1000, { message: "Maximum deposit is 1000 sBTC" }),
 });
 
 export const DepositForForm: React.FC = () => {
@@ -41,7 +41,7 @@ export const DepositForForm: React.FC = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      recipient: '',
+      recipient: "",
       amount: 0.1,
     },
   });
@@ -49,13 +49,13 @@ export const DepositForForm: React.FC = () => {
   // Set preset percentages
   const setPreset = (percentage: number) => {
     const amount = (sbtcBalance * percentage) / 100;
-    form.setValue('amount', Math.max(0.1, Math.min(amount, 1000)));
+    form.setValue("amount", Math.max(0.1, Math.min(amount, 1000)));
   };
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (values.amount > sbtcBalance) {
-      toast.error('Insufficient sBTC balance');
+      toast.error("Insufficient sBTC balance");
       return;
     }
 
@@ -66,11 +66,11 @@ export const DepositForForm: React.FC = () => {
         values.recipient,
         values.amount,
         (data) => {
-          toast.success('Deposit-for transaction submitted!', {
+          toast.success("Deposit-for transaction submitted!", {
             description: `Deposited ${values.amount} sBTC for ${values.recipient.slice(0, 10)}...`,
             action: {
-              label: 'View',
-              onClick: () => window.open(getExplorerUrl(data.txId), '_blank'),
+              label: "View",
+              onClick: () => window.open(getExplorerUrl(data.txId), "_blank"),
             },
           });
 
@@ -79,13 +79,13 @@ export const DepositForForm: React.FC = () => {
           setIsSubmitting(false);
         },
         () => {
-          toast.error('Transaction cancelled');
+          toast.error("Transaction cancelled");
           setIsSubmitting(false);
         }
       );
     } catch (error) {
-      console.error('Deposit-for error:', error);
-      toast.error('Failed to submit deposit-for transaction');
+      console.error("Deposit-for error:", error);
+      toast.error("Failed to submit deposit-for transaction");
       setIsSubmitting(false);
     }
   };
@@ -97,7 +97,8 @@ export const DepositForForm: React.FC = () => {
         <Alert>
           <Gift className="h-4 w-4" />
           <AlertDescription>
-            Deposit sBTC on behalf of another user. You pay, they receive the vault balance.
+            Deposit sBTC on behalf of another user. You pay, they receive the
+            vault balance.
           </AlertDescription>
         </Alert>
 
@@ -136,7 +137,9 @@ export const DepositForForm: React.FC = () => {
                   step="0.0001"
                   placeholder="0.1"
                   {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    field.onChange(parseFloat(e.target.value) || 0)
+                  }
                   disabled={isSubmitting}
                 />
               </FormControl>
@@ -195,8 +198,8 @@ export const DepositForForm: React.FC = () => {
             min={0.1}
             max={Math.min(sbtcBalance, 1000)}
             step={0.01}
-            value={[form.watch('amount')]}
-            onValueChange={([value]) => form.setValue('amount', value)}
+            value={[form.watch("amount")]}
+            onValueChange={([value]) => form.setValue("amount", value)}
             disabled={isSubmitting}
           />
         </div>

@@ -1,20 +1,26 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Vault, TrendingUp, Users } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { DepositForm } from './DepositForm';
-import { WithdrawalForm } from './WithdrawalForm';
-import { DepositForForm } from './DepositForForm';
-import { TransactionHistory } from './TransactionHistory';
-import { useContract } from '@/hooks/useContract';
-import { useWallet } from '@/contexts/WalletContext';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+import React from "react";
+import { Vault, TrendingUp, Users } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { DepositForm } from "./DepositForm";
+import { WithdrawalForm } from "./WithdrawalForm";
+import { DepositForForm } from "./DepositForForm";
+import { TransactionHistory } from "./TransactionHistory";
+import { useContract } from "@/hooks/useContract";
+import { useWallet } from "@/contexts/WalletContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 export const VaultInterface: React.FC = () => {
   const { isConnected } = useWallet();
@@ -24,8 +30,10 @@ export const VaultInterface: React.FC = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>BitYield Vault</CardTitle>
-          <CardDescription>Connect your wallet to interact with the vault</CardDescription>
+          <CardTitle>yieldr Vault</CardTitle>
+          <CardDescription>
+            Connect your wallet to interact with the vault
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
@@ -40,11 +48,11 @@ export const VaultInterface: React.FC = () => {
   }
 
   // Show contract not deployed warning
-  if (error === 'CONTRACT_NOT_DEPLOYED') {
+  if (error === "CONTRACT_NOT_DEPLOYED") {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>BitYield Vault</CardTitle>
+          <CardTitle>yieldr Vault</CardTitle>
           <CardDescription>Contract deployment required</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -52,9 +60,13 @@ export const VaultInterface: React.FC = () => {
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               <div className="space-y-2">
-                <p className="font-semibold">The vault contract is not deployed yet.</p>
+                <p className="font-semibold">
+                  The vault contract is not deployed yet.
+                </p>
                 <p className="text-sm">
-                  The contract needs to be deployed to {process.env.NEXT_PUBLIC_NETWORK || 'testnet'} before you can interact with it.
+                  The contract needs to be deployed to{" "}
+                  {process.env.NEXT_PUBLIC_NETWORK || "testnet"} before you can
+                  interact with it.
                 </p>
               </div>
             </AlertDescription>
@@ -64,19 +76,40 @@ export const VaultInterface: React.FC = () => {
             <h4 className="font-semibold text-sm">To deploy the contract:</h4>
             <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
               <li>Navigate to the project root directory</li>
-              <li>Run: <code className="bg-muted px-1.5 py-0.5 rounded">clarinet deployments apply --testnet</code></li>
-              <li>Update <code className="bg-muted px-1.5 py-0.5 rounded">NEXT_PUBLIC_CONTRACT_ADDRESS</code> in <code className="bg-muted px-1.5 py-0.5 rounded">.env.local</code></li>
+              <li>
+                Run:{" "}
+                <code className="bg-muted px-1.5 py-0.5 rounded">
+                  clarinet deployments apply --testnet
+                </code>
+              </li>
+              <li>
+                Update{" "}
+                <code className="bg-muted px-1.5 py-0.5 rounded">
+                  NEXT_PUBLIC_CONTRACT_ADDRESS
+                </code>{" "}
+                in{" "}
+                <code className="bg-muted px-1.5 py-0.5 rounded">
+                  .env.local
+                </code>
+              </li>
               <li>Restart the development server</li>
             </ol>
             <p className="text-sm text-muted-foreground mt-3">
-              See <code className="bg-muted px-1.5 py-0.5 rounded">frontend/DEPLOYMENT-GUIDE.md</code> for detailed instructions.
+              See{" "}
+              <code className="bg-muted px-1.5 py-0.5 rounded">
+                frontend/DEPLOYMENT-GUIDE.md
+              </code>{" "}
+              for detailed instructions.
             </p>
           </div>
 
           <Alert>
             <AlertDescription className="text-sm">
-              <strong>Current contract address:</strong><br />
-              <code className="text-xs">{process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}</code>
+              <strong>Current contract address:</strong>
+              <br />
+              <code className="text-xs">
+                {process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}
+              </code>
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -87,8 +120,8 @@ export const VaultInterface: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Vault Statistics */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-3 animate-fade-in">
+        <Card className="hover-lift transition-smooth">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Your Balance</CardTitle>
             <Vault className="h-4 w-4 text-muted-foreground" />
@@ -98,16 +131,16 @@ export const VaultInterface: React.FC = () => {
               <Skeleton className="h-8 w-24" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{vaultData.userBalance.toFixed(4)} sBTC</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  In vault
-                </p>
+                <div className="text-2xl font-bold">
+                  {vaultData.userBalance.toFixed(4)} sBTC
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">In vault</p>
               </>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift transition-smooth">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total TVL</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -117,7 +150,9 @@ export const VaultInterface: React.FC = () => {
               <Skeleton className="h-8 w-24" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{vaultData.totalTvl.toFixed(2)} sBTC</div>
+                <div className="text-2xl font-bold">
+                  {vaultData.totalTvl.toFixed(2)} sBTC
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Total value locked
                 </p>
@@ -126,7 +161,7 @@ export const VaultInterface: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift transition-smooth">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Depositors</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -136,7 +171,9 @@ export const VaultInterface: React.FC = () => {
               <Skeleton className="h-8 w-16" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{vaultData.depositorCount}</div>
+                <div className="text-2xl font-bold">
+                  {vaultData.depositorCount}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Unique depositors
                 </p>
@@ -151,21 +188,22 @@ export const VaultInterface: React.FC = () => {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            The vault contract is currently paused. Deposits and withdrawals are temporarily disabled.
+            The vault contract is currently paused. Deposits and withdrawals are
+            temporarily disabled.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Deposit/Withdrawal Interface */}
-      <Card>
+      <Card className="animate-fade-in-up">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Vault Operations</CardTitle>
               <CardDescription>Deposit or withdraw your sBTC</CardDescription>
             </div>
-            <Badge variant={isPaused ? 'destructive' : 'default'}>
-              {isPaused ? 'Paused' : 'Active'}
+            <Badge variant={isPaused ? "destructive" : "default"}>
+              {isPaused ? "Paused" : "Active"}
             </Badge>
           </div>
         </CardHeader>

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { YieldDashboard } from '@/components/dashboard/YieldDashboard';
+import React from "react";
+import { YieldDashboard } from "@/components/dashboard/YieldDashboard";
 
 export default function YieldsPage() {
   return (

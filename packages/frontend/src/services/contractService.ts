@@ -5,23 +5,28 @@ import {
   uintCV,
   principalCV,
   PostConditionMode,
-} from '@stacks/transactions';
-import { openContractCall } from '@stacks/connect';
-import { getNetwork } from './walletService';
-import { VaultBalance } from '@/types';
+} from "@stacks/transactions";
+import { openContractCall } from "@stacks/connect";
+import { getNetwork } from "./walletService";
+import { VaultBalance } from "@/types";
 
 // Contract details
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || 'STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ';
-const CONTRACT_NAME = process.env.NEXT_PUBLIC_CONTRACT_NAME || 'bityield-vault-updated';
+const CONTRACT_ADDRESS =
+  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
+  "STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ";
+const CONTRACT_NAME =
+  process.env.NEXT_PUBLIC_CONTRACT_NAME || "bityield-vault-updated";
 
 // Read-only function: Get user balance
-export const getUserVaultBalance = async (userAddress: string): Promise<number> => {
+export const getUserVaultBalance = async (
+  userAddress: string
+): Promise<number> => {
   try {
     const network = getNetwork();
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'get-balance',
+      functionName: "get-balance",
       functionArgs: [principalCV(userAddress)],
       network,
       senderAddress: userAddress,
@@ -30,7 +35,7 @@ export const getUserVaultBalance = async (userAddress: string): Promise<number> 
     const jsonResult = cvToJSON(result);
     return parseInt(jsonResult.value) / 100_000_000; // Convert sats to BTC
   } catch (error) {
-    console.error('Error fetching vault balance:', error);
+    console.error("Error fetching vault balance:", error);
     return 0;
   }
 };
@@ -42,7 +47,7 @@ export const getTotalTvl = async (): Promise<number> => {
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'get-total-tvl',
+      functionName: "get-total-tvl",
       functionArgs: [],
       network,
       senderAddress: CONTRACT_ADDRESS,
@@ -51,7 +56,7 @@ export const getTotalTvl = async (): Promise<number> => {
     const jsonResult = cvToJSON(result);
     return parseInt(jsonResult.value) / 100_000_000; // Convert sats to BTC
   } catch (error) {
-    console.error('Error fetching TVL:', error);
+    console.error("Error fetching TVL:", error);
     return 0;
   }
 };
@@ -63,7 +68,7 @@ export const getDepositorCount = async (): Promise<number> => {
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'get-depositor-count',
+      functionName: "get-depositor-count",
       functionArgs: [],
       network,
       senderAddress: CONTRACT_ADDRESS,
@@ -72,7 +77,7 @@ export const getDepositorCount = async (): Promise<number> => {
     const jsonResult = cvToJSON(result);
     return parseInt(jsonResult.value);
   } catch (error) {
-    console.error('Error fetching depositor count:', error);
+    console.error("Error fetching depositor count:", error);
     return 0;
   }
 };
@@ -84,7 +89,7 @@ export const isContractPaused = async (): Promise<boolean> => {
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'is-paused',
+      functionName: "is-paused",
       functionArgs: [],
       network,
       senderAddress: CONTRACT_ADDRESS,
@@ -93,13 +98,15 @@ export const isContractPaused = async (): Promise<boolean> => {
     const jsonResult = cvToJSON(result);
     return jsonResult.value === true;
   } catch (error) {
-    console.error('Error checking pause status:', error);
+    console.error("Error checking pause status:", error);
     return false;
   }
 };
 
 // Get all vault data
-export const getVaultData = async (userAddress: string): Promise<VaultBalance> => {
+export const getVaultData = async (
+  userAddress: string
+): Promise<VaultBalance> => {
   try {
     const [userBalance, totalTvl, depositorCount] = await Promise.all([
       getUserVaultBalance(userAddress),
@@ -113,7 +120,7 @@ export const getVaultData = async (userAddress: string): Promise<VaultBalance> =
       depositorCount,
     };
   } catch (error) {
-    console.error('Error fetching vault data:', error);
+    console.error("Error fetching vault data:", error);
     return {
       userBalance: 0,
       totalTvl: 0,
@@ -135,21 +142,21 @@ export const depositSbtc = async (
     openContractCall({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'deposit-sbtc',
+      functionName: "deposit-sbtc",
       functionArgs: [uintCV(amountInSats)],
       postConditionMode: PostConditionMode.Allow, // Allow mode to skip post-condition checks
       network,
       onFinish: (data) => {
-        console.log('Deposit transaction submitted:', data.txId);
+        console.log("Deposit transaction submitted:", data.txId);
         if (onFinish) onFinish(data);
       },
       onCancel: () => {
-        console.log('Deposit cancelled');
+        console.log("Deposit cancelled");
         if (onCancel) onCancel();
       },
     });
   } catch (error) {
-    console.error('Error depositing sBTC:', error);
+    console.error("Error depositing sBTC:", error);
     throw error;
   }
 };
@@ -167,21 +174,21 @@ export const withdrawSbtc = async (
     openContractCall({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'withdraw-sbtc',
+      functionName: "withdraw-sbtc",
       functionArgs: [uintCV(amountInSats)],
       postConditionMode: PostConditionMode.Allow, // Allow mode to skip post-condition checks
       network,
       onFinish: (data) => {
-        console.log('Withdrawal transaction submitted:', data.txId);
+        console.log("Withdrawal transaction submitted:", data.txId);
         if (onFinish) onFinish(data);
       },
       onCancel: () => {
-        console.log('Withdrawal cancelled');
+        console.log("Withdrawal cancelled");
         if (onCancel) onCancel();
       },
     });
   } catch (error) {
-    console.error('Error withdrawing sBTC:', error);
+    console.error("Error withdrawing sBTC:", error);
     throw error;
   }
 };
@@ -197,8 +204,8 @@ export const getTransactionStatus = async (txId: string): Promise<string> => {
 
     return data.tx_status;
   } catch (error) {
-    console.error('Error fetching transaction status:', error);
-    return 'unknown';
+    console.error("Error fetching transaction status:", error);
+    return "unknown";
   }
 };
 
@@ -215,13 +222,15 @@ export const getExplorerUrl = (txId: string): string => {
 };
 
 // Read-only function: Get deposit timestamp
-export const getDepositTimestamp = async (userAddress: string): Promise<number> => {
+export const getDepositTimestamp = async (
+  userAddress: string
+): Promise<number> => {
   try {
     const network = getNetwork();
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'get-deposit-timestamp',
+      functionName: "get-deposit-timestamp",
       functionArgs: [principalCV(userAddress)],
       network,
       senderAddress: userAddress,
@@ -230,19 +239,21 @@ export const getDepositTimestamp = async (userAddress: string): Promise<number> 
     const jsonResult = cvToJSON(result);
     return parseInt(jsonResult.value);
   } catch (error) {
-    console.error('Error fetching deposit timestamp:', error);
+    console.error("Error fetching deposit timestamp:", error);
     return 0;
   }
 };
 
 // Read-only function: Get withdrawal timestamp
-export const getWithdrawalTimestamp = async (userAddress: string): Promise<number> => {
+export const getWithdrawalTimestamp = async (
+  userAddress: string
+): Promise<number> => {
   try {
     const network = getNetwork();
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'get-withdrawal-timestamp',
+      functionName: "get-withdrawal-timestamp",
       functionArgs: [principalCV(userAddress)],
       network,
       senderAddress: userAddress,
@@ -251,7 +262,7 @@ export const getWithdrawalTimestamp = async (userAddress: string): Promise<numbe
     const jsonResult = cvToJSON(result);
     return parseInt(jsonResult.value);
   } catch (error) {
-    console.error('Error fetching withdrawal timestamp:', error);
+    console.error("Error fetching withdrawal timestamp:", error);
     return 0;
   }
 };
@@ -270,21 +281,21 @@ export const depositFor = async (
     openContractCall({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'deposit-for',
+      functionName: "deposit-for",
       functionArgs: [principalCV(recipient), uintCV(amountInSats)],
       postConditionMode: PostConditionMode.Allow, // Allow mode to skip post-condition checks
       network,
       onFinish: (data) => {
-        console.log('Deposit-for transaction submitted:', data.txId);
+        console.log("Deposit-for transaction submitted:", data.txId);
         if (onFinish) onFinish(data);
       },
       onCancel: () => {
-        console.log('Deposit-for cancelled');
+        console.log("Deposit-for cancelled");
         if (onCancel) onCancel();
       },
     });
   } catch (error) {
-    console.error('Error depositing sBTC for recipient:', error);
+    console.error("Error depositing sBTC for recipient:", error);
     throw error;
   }
 };

@@ -1,14 +1,27 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Bot, Sparkles, TrendingUp, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Recommendation } from '@/types';
+import React, { useState } from "react";
+import {
+  Bot,
+  Sparkles,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Recommendation } from "@/types";
 
 interface AIRecommendationProps {
   recommendation: Recommendation | null;
@@ -45,7 +58,11 @@ export const AIRecommendation: React.FC<AIRecommendationProps> = ({
     const backendEarnings = recommendation.projectedEarnings;
 
     // If backend returns zeros, calculate on frontend
-    if (backendEarnings.daily === 0 && backendEarnings.monthly === 0 && backendEarnings.yearly === 0) {
+    if (
+      backendEarnings.daily === 0 &&
+      backendEarnings.monthly === 0 &&
+      backendEarnings.yearly === 0
+    ) {
       return calculateEarnings(recommendation.recommended.expectedApy, amount);
     }
 
@@ -57,20 +74,48 @@ export const AIRecommendation: React.FC<AIRecommendationProps> = ({
   // Loading skeleton
   if (isLoading) {
     return (
-      <Card className="border-2 border-primary/20">
+      <Card className="border-2 border-primary/20 animate-fade-in">
         <CardHeader>
           <div className="flex items-center gap-2">
             <Bot className="h-6 w-6 text-primary animate-pulse" />
-            <div>
-              <Skeleton className="h-6 w-48 mb-2" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-6 w-48" />
               <Skeleton className="h-4 w-64" />
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-12 w-full" />
+        <CardContent className="space-y-6">
+          <div className="p-4 rounded-lg border-2 space-y-3">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-7 w-24" />
+            </div>
+            <Skeleton className="h-4 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center space-y-2">
+              <Skeleton className="h-8 w-full mx-auto" />
+              <Skeleton className="h-3 w-12 mx-auto" />
+            </div>
+            <div className="text-center space-y-2">
+              <Skeleton className="h-8 w-full mx-auto" />
+              <Skeleton className="h-3 w-12 mx-auto" />
+            </div>
+            <div className="text-center space-y-2">
+              <Skeleton className="h-8 w-full mx-auto" />
+              <Skeleton className="h-3 w-12 mx-auto" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-2 w-full" />
+          </div>
         </CardContent>
       </Card>
     );
@@ -112,12 +157,16 @@ export const AIRecommendation: React.FC<AIRecommendationProps> = ({
         {/* Recommended Protocol */}
         <div className="p-4 bg-background rounded-lg border-2 border-primary">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-2xl font-bold">{recommendation.recommended.protocol}</h3>
+            <h3 className="text-2xl font-bold">
+              {recommendation.recommended.protocol}
+            </h3>
             <Badge variant="default" className="text-lg px-3 py-1">
               {recommendation.recommended.expectedApy.toFixed(2)}% APY
             </Badge>
           </div>
-          <p className="text-muted-foreground">{recommendation.recommended.pool}</p>
+          <p className="text-muted-foreground">
+            {recommendation.recommended.pool}
+          </p>
         </div>
 
         {/* AI Reasoning */}
@@ -168,7 +217,8 @@ export const AIRecommendation: React.FC<AIRecommendationProps> = ({
             </div>
           </div>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Based on {recommendation.recommended.expectedApy.toFixed(2)}% APY and {amount.toFixed(2)} sBTC deposit
+            Based on {recommendation.recommended.expectedApy.toFixed(2)}% APY
+            and {amount.toFixed(2)} sBTC deposit
           </p>
         </div>
 
@@ -202,18 +252,29 @@ export const AIRecommendation: React.FC<AIRecommendationProps> = ({
                 <span className="font-semibold">
                   Alternative Options ({recommendation.alternatives.length})
                 </span>
-                {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showDetails ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
               </Button>
 
               {showDetails && (
                 <div className="mt-4 space-y-3">
                   {recommendation.alternatives.map((alt, index) => (
-                    <div key={index} className="p-3 bg-background rounded-lg border">
+                    <div
+                      key={index}
+                      className="p-3 bg-background rounded-lg border"
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <h5 className="font-semibold">{alt.protocol}</h5>
-                        <Badge variant="secondary">{alt.apy.toFixed(2)}% APY</Badge>
+                        <Badge variant="secondary">
+                          {alt.apy.toFixed(2)}% APY
+                        </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-2">{alt.pool}</p>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {alt.pool}
+                      </p>
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
                           <p className="font-medium text-green-600">Pros:</p>
@@ -242,10 +303,12 @@ export const AIRecommendation: React.FC<AIRecommendationProps> = ({
       </CardContent>
 
       <CardFooter>
-        <Button className="w-full" size="lg">
-          <TrendingUp className="mr-2 h-4 w-4" />
-          Deploy to {recommendation.recommended.protocol}
-        </Button>
+        <Alert className="w-full">
+          <AlertDescription className="text-sm">
+            💡 To deploy to {recommendation.recommended.protocol}, visit their
+            platform directly or contact support for integration assistance.
+          </AlertDescription>
+        </Alert>
       </CardFooter>
     </Card>
   );

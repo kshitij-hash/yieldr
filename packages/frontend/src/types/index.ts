@@ -3,7 +3,12 @@
 // Yield Opportunity from backend
 export interface YieldOpportunity {
   protocol: string;
-  protocolType: 'lending' | 'liquidity_pool' | 'staking' | 'yield_farming' | 'auto_compounding';
+  protocolType:
+    | "lending"
+    | "liquidity_pool"
+    | "staking"
+    | "yield_farming"
+    | "auto_compounding";
   poolId: string;
   poolName: string;
   apy: number;
@@ -15,7 +20,7 @@ export interface YieldOpportunity {
   tvl: number;
   tvlInSBTC: number;
   volume24h?: number;
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
   riskFactors: string[];
   minDeposit: number;
   lockPeriod: number;
@@ -23,7 +28,7 @@ export interface YieldOpportunity {
   withdrawalFee: number;
   performanceFee: number;
   impermanentLossRisk: boolean;
-  auditStatus: 'audited' | 'unaudited' | 'in-progress';
+  auditStatus: "audited" | "unaudited" | "in-progress";
   protocolAge: number;
   contractAddress: string;
   description: string;
@@ -57,7 +62,7 @@ export interface Recommendation {
 // User Preferences for recommendation
 export interface UserPreferences {
   amount: number;
-  riskTolerance: 'conservative' | 'moderate' | 'aggressive';
+  riskTolerance: "conservative" | "moderate" | "aggressive";
   lockPeriodPreference?: number;
   avoidImpermanentLoss?: boolean;
 }
@@ -68,7 +73,7 @@ export interface WalletState {
   address: string | null;
   stxBalance: number;
   sbtcBalance: number;
-  network: 'testnet' | 'mainnet';
+  network: "testnet" | "mainnet";
 }
 
 // Vault Balance
@@ -83,8 +88,8 @@ export interface VaultBalance {
 // Transaction Status
 export interface Transaction {
   txId: string;
-  status: 'pending' | 'success' | 'failed';
-  type: 'deposit' | 'withdrawal';
+  status: "pending" | "success" | "failed";
+  type: "deposit" | "withdrawal";
   amount: number;
   timestamp: number;
 }

@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Loader2, ArrowUp, AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Loader2, ArrowUp, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -14,10 +14,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,18 +27,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useContract } from '@/hooks/useContract';
-import { useWallet } from '@/contexts/WalletContext';
-import { withdrawSbtc, getExplorerUrl } from '@/services/contractService';
-import { toast } from 'sonner';
+} from "@/components/ui/alert-dialog";
+import { useContract } from "@/hooks/useContract";
+import { useWallet } from "@/contexts/WalletContext";
+import { withdrawSbtc, getExplorerUrl } from "@/services/contractService";
+import { toast } from "sonner";
 
 // Form validation schema
 const formSchema = z.object({
   amount: z
     .number()
-    .min(0.0001, { message: 'Minimum withdrawal is 0.0001 sBTC' })
-    .max(1000, { message: 'Maximum withdrawal is 1000 sBTC' }),
+    .min(0.0001, { message: "Minimum withdrawal is 0.0001 sBTC" })
+    .max(1000, { message: "Maximum withdrawal is 1000 sBTC" }),
 });
 
 export const WithdrawalForm: React.FC = () => {
@@ -58,13 +58,13 @@ export const WithdrawalForm: React.FC = () => {
   // Set preset percentages
   const setPreset = (percentage: number) => {
     const amount = (vaultData.userBalance * percentage) / 100;
-    form.setValue('amount', Math.max(0.0001, amount));
+    form.setValue("amount", Math.max(0.0001, amount));
   };
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (values.amount > vaultData.userBalance) {
-      toast.error('Insufficient vault balance');
+      toast.error("Insufficient vault balance");
       return;
     }
 
@@ -82,11 +82,11 @@ export const WithdrawalForm: React.FC = () => {
       await withdrawSbtc(
         pendingAmount,
         (data) => {
-          toast.success('Withdrawal transaction submitted!', {
+          toast.success("Withdrawal transaction submitted!", {
             description: `Transaction ID: ${data.txId.slice(0, 8)}...`,
             action: {
-              label: 'View',
-              onClick: () => window.open(getExplorerUrl(data.txId), '_blank'),
+              label: "View",
+              onClick: () => window.open(getExplorerUrl(data.txId), "_blank"),
             },
           });
 
@@ -96,13 +96,13 @@ export const WithdrawalForm: React.FC = () => {
           setIsSubmitting(false);
         },
         () => {
-          toast.error('Transaction cancelled');
+          toast.error("Transaction cancelled");
           setIsSubmitting(false);
         }
       );
     } catch (error) {
-      console.error('Withdrawal error:', error);
-      toast.error('Failed to submit withdrawal transaction');
+      console.error("Withdrawal error:", error);
+      toast.error("Failed to submit withdrawal transaction");
       setIsSubmitting(false);
     }
   };
@@ -133,7 +133,9 @@ export const WithdrawalForm: React.FC = () => {
                     step="0.0001"
                     placeholder="0.1"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      field.onChange(parseFloat(e.target.value) || 0)
+                    }
                     disabled={isSubmitting || vaultData.userBalance === 0}
                   />
                 </FormControl>
@@ -193,8 +195,8 @@ export const WithdrawalForm: React.FC = () => {
                 min={0.0001}
                 max={vaultData.userBalance}
                 step={0.0001}
-                value={[form.watch('amount')]}
-                onValueChange={([value]) => form.setValue('amount', value)}
+                value={[form.watch("amount")]}
+                onValueChange={([value]) => form.setValue("amount", value)}
                 disabled={isSubmitting}
               />
             </div>
@@ -228,12 +230,15 @@ export const WithdrawalForm: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Withdrawal</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to withdraw {pendingAmount.toFixed(4)} sBTC from the vault? This action cannot be undone.
+              Are you sure you want to withdraw {pendingAmount.toFixed(4)} sBTC
+              from the vault? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmWithdrawal}>Confirm</AlertDialogAction>
+            <AlertDialogAction onClick={confirmWithdrawal}>
+              Confirm
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
