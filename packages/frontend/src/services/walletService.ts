@@ -1,24 +1,23 @@
-// Wallet Service for Stacks Connect Integration
 import { connect, disconnect, isConnected, getLocalStorage } from '@stacks/connect';
 import { StacksNetwork, STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network';
 
-// Get current network
+
 export const getNetwork = (): StacksNetwork => {
   const networkEnv = process.env.NEXT_PUBLIC_NETWORK || 'testnet';
   return networkEnv === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
 };
 
-// Connect wallet
+
 export const connectWallet = async (onFinish?: () => void) => {
   try {
-    // Check if already connected
+   
     if (isConnected()) {
       console.log('Already authenticated');
       if (onFinish) onFinish();
       return;
     }
 
-    // Connect to wallet
+    
     const response = await connect();
     console.log('Connected:', response.addresses);
 
@@ -29,22 +28,20 @@ export const connectWallet = async (onFinish?: () => void) => {
   }
 };
 
-// Disconnect wallet
 export const disconnectWallet = () => {
   try {
-    disconnect(); // Clears storage and wallet selection
+    disconnect(); 
     console.log('User disconnected');
   } catch (error) {
     console.error('Error disconnecting wallet:', error);
   }
 };
 
-// Check if wallet is connected
+
 export const isWalletConnected = (): boolean => {
   return isConnected();
 };
 
-// Get user address
 export const getUserAddress = (): string | null => {
   try {
     const userData = getLocalStorage();
@@ -58,7 +55,7 @@ export const getUserAddress = (): string | null => {
   }
 };
 
-// Get user data
+
 export const getUserData = () => {
   try {
     return getLocalStorage();
@@ -68,7 +65,7 @@ export const getUserData = () => {
   }
 };
 
-// Fetch STX balance
+
 export const fetchStxBalance = async (address: string): Promise<number> => {
   try {
     const network = getNetwork();
@@ -77,7 +74,7 @@ export const fetchStxBalance = async (address: string): Promise<number> => {
     const response = await fetch(url);
     const data = await response.json();
 
-    // Convert microSTX to STX
+    
     return parseInt(data.balance) / 1_000_000;
   } catch (error) {
     console.error('Error fetching STX balance:', error);
@@ -85,7 +82,7 @@ export const fetchStxBalance = async (address: string): Promise<number> => {
   }
 };
 
-// Fetch sBTC balance (assuming SIP-010 token)
+
 export const fetchSbtcBalance = async (address: string): Promise<number> => {
   try {
     const network = getNetwork();
@@ -103,11 +100,10 @@ export const fetchSbtcBalance = async (address: string): Promise<number> => {
       return 0;
     }
 
-    // Search for sBTC tokens by looking for common sBTC contract patterns
-    // This is more flexible than hardcoding specific contract addresses
+    
     let totalSbtcBalance = 0;
     
-    // Common sBTC token patterns to search for
+    
     const sbtcPatterns = [
       /\.sbtc::/i,           // Matches contracts ending with .sbtc::
       /sbtc-token::/i,       // Matches sbtc-token contracts
@@ -116,10 +112,10 @@ export const fetchSbtcBalance = async (address: string): Promise<number> => {
       /::sbtc-token$/i       // Matches tokens ending with ::sbtc-token
     ];
 
-    // Check if user has explicitly set a specific sBTC contract
+    
     const explicitContract = process.env.NEXT_PUBLIC_SBTC_CONTRACT;
     if (explicitContract) {
-      // Try the explicit contract with different token name patterns
+     
       const explicitPatterns = [
         `${explicitContract}::sbtc`,
         `${explicitContract}::sBTC`, 

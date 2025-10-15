@@ -1,6 +1,6 @@
 import { createLogger } from '../config/logger.js';
 import { zestProtocol } from './zest.js';
-import { velarDEX } from './velar.js';
+import { velarRealIntegration } from './velar-real.js'; // Updated to use real data
 import { alexProtocol } from './alex.js';
 import {
   Protocol,
@@ -27,7 +27,7 @@ export class ProtocolAggregator {
     // Fetch from all protocols in parallel
     const [zestData, velarData, alexData] = await Promise.allSettled([
       this.fetchProtocolData(Protocol.ZEST, () => zestProtocol.fetchYieldOpportunities()),
-      this.fetchProtocolData(Protocol.VELAR, () => velarDEX.fetchYieldOpportunities()),
+      this.fetchProtocolData(Protocol.VELAR, () => velarRealIntegration.fetchYieldOpportunities()),
       this.fetchProtocolData(Protocol.ALEX, () => alexProtocol.fetchYieldOpportunities()),
     ]);
 
