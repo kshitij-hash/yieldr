@@ -1,6 +1,6 @@
 ---
 id: 0
-name: Pool Oracle v2 with TVL Support
+name: BitYield Vault V2 Only
 network: testnet
 stacks-node: "https://api.testnet.hiro.so"
 bitcoin-node: "http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:18332"
@@ -9,9 +9,10 @@ plan:
     - id: 0
       transactions:
         - contract-publish:
-            contract-name: pool-oracle-v2
+            contract-name: bityield-vault-v2
             expected-sender: STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ
-            cost: 3160920
-            path: contracts/pool-oracle.clar
+            cost: 154460
+            path: contracts/bityield-vault-updated.clar
+            anchor-block-only: true
             clarity-version: 3
       epoch: "3.2"

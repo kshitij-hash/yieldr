@@ -137,3 +137,122 @@ export interface MarketContext {
   stacksBlockHeight: number;
   ecosystemTvl: number;
 }
+
+// ============================================================================
+// BitYield Vault Types
+// ============================================================================
+
+/**
+ * APY data for both ALEX and Velar pools
+ */
+export interface BitYieldAPY {
+  alex: {
+    apy: number;
+    apyFormatted: string;
+    basisPoints: number;
+  };
+  velar: {
+    apy: number;
+    apyFormatted: string;
+    basisPoints: number;
+  };
+  lastUpdated: number;
+}
+
+/**
+ * Vault TVL and statistics
+ */
+export interface BitYieldVaultStats {
+  totalTvl: number;
+  totalTvlBTC: number;
+  totalTvlFormatted: string;
+  depositorCount: number;
+  isPaused: boolean;
+}
+
+/**
+ * Individual pool statistics (ALEX or Velar)
+ */
+export interface BitYieldPoolData {
+  tvl: number;
+  tvlBTC: number;
+  tvlFormatted: string;
+  apy: number;
+  apyFormatted: string;
+  isPaused: boolean;
+}
+
+/**
+ * Combined pool statistics
+ */
+export interface BitYieldPoolsStats {
+  alex: BitYieldPoolData;
+  velar: BitYieldPoolData;
+  total: {
+    tvl: number;
+    tvlBTC: number;
+    tvlFormatted: string;
+  };
+}
+
+/**
+ * User balance and positions in the vault
+ */
+export interface BitYieldUserBalance {
+  vaultBalance: number;
+  vaultBalanceBTC: number;
+  vaultBalanceFormatted: string;
+  allocations: {
+    alex: {
+      amount: number;
+      amountBTC: number;
+      amountFormatted: string;
+      percentage: string;
+    };
+    velar: {
+      amount: number;
+      amountBTC: number;
+      amountFormatted: string;
+      percentage: string;
+    };
+    total: number;
+  };
+  totalValueWithYield: {
+    amount: number;
+    amountBTC: number;
+    amountFormatted: string;
+  };
+  yield: {
+    amount: number;
+    amountBTC: number;
+    amountFormatted: string;
+  };
+  riskPreference: {
+    value: number;
+    name: string;
+  };
+}
+
+/**
+ * Comprehensive vault statistics
+ */
+export interface BitYieldComprehensiveStats {
+  vault: {
+    tvl: number;
+    tvlBTC: number;
+    tvlFormatted: string;
+    depositors: number;
+    isPaused: boolean;
+  };
+  pools: {
+    alex: BitYieldPoolData;
+    velar: BitYieldPoolData;
+    combined: {
+      tvl: number;
+      tvlBTC: number;
+    };
+  };
+  apy: {
+    lastUpdated: number;
+  };
+}

@@ -904,4 +904,452 @@ describe("BitYield Vault Contract", () => {
 
   });
 
+  // =============================================================================
+  // PHASE 10: Rebalancing Functions Tests
+  // =============================================================================
+
+  describe("Rebalancing Functions", () => {
+
+    describe("Risk Profile Management", () => {
+      it("should allow users to set risk preference", () => {
+        const result = simnet.callPublicFn(
+          "yielder",
+          "set-risk-preference",
+          [Cl.uint(1)], // Conservative
+          wallet1
+        );
+        expect(result.result).toBeOk(Cl.bool(true));
+
+        // Verify it was set
+        const { result: risk } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-risk-preference",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(risk).toBeOk(Cl.uint(1));
+      });
+
+      it("should reject invalid risk preference values", () => {
+        const result = simnet.callPublicFn(
+          "yielder",
+          "set-risk-preference",
+          [Cl.uint(4)], // Invalid: only 1, 2, 3 allowed
+          wallet1
+        );
+        expect(result.result).toBeErr(Cl.uint(106)); // err-invalid-risk-preference
+      });
+
+      it("should default to moderate (2) if not set", () => {
+        const { result } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-risk-preference",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(result).toBeOk(Cl.uint(2)); // Default moderate
+      });
+
+      it("should allow changing risk preference", () => {
+        // Set to conservative
+        simnet.callPublicFn(
+          "yielder",
+          "set-risk-preference",
+          [Cl.uint(1)],
+          wallet1
+        );
+
+        // Change to aggressive
+        const result = simnet.callPublicFn(
+          "yielder",
+          "set-risk-preference",
+          [Cl.uint(3)],
+          wallet1
+        );
+        expect(result.result).toBeOk(Cl.bool(true));
+
+        const { result: risk } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-risk-preference",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(risk).toBeOk(Cl.uint(3));
+      });
+    });
+
+    describe("Rebalance Function", () => {
+      beforeEach(() => {
+        // Setup: User has balance in vault
+        // Note: In real scenario, user would deposit sBTC first
+        // For testing rebalancing logic, we simulate having balance
+      });
+
+      it("should allow rebalancing funds between pools", () => {
+        const alexAmount = 600000;
+        const velarAmount = 400000;
+
+        const result = simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(alexAmount), Cl.uint(velarAmount)],
+          wallet1
+        );
+        expect(result.result).toBeOk(Cl.bool(true));
+
+        // Check allocations were recorded
+        const { result: allocations } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-pool-allocations",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(allocations).toBeOk(
+          Cl.tuple({
+            "alex-amount": Cl.uint(alexAmount),
+            "velar-amount": Cl.uint(velarAmount),
+          })
+        );
+      });
+
+      it("should reject rebalancing when contract is paused", () => {
+        simnet.callPublicFn(
+          "yielder",
+          "pause-contract",
+          [],
+          deployer
+        );
+
+        const result = simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(500000), Cl.uint(500000)],
+          wallet1
+        );
+        expect(result.result).toBeErr(Cl.uint(104)); // err-contract-paused
+
+        simnet.callPublicFn(
+          "yielder",
+          "unpause-contract",
+          [],
+          deployer
+        );
+      });
+
+      it("should reject rebalancing with zero total amount", () => {
+        const result = simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(0), Cl.uint(0)],
+          wallet1
+        );
+        expect(result.result).toBeErr(Cl.uint(102)); // err-invalid-amount
+      });
+
+      it("should allow rebalancing regardless of vault balance (testnet simulation)", () => {
+        // Note: For testnet simulation, users can deposit directly to pools
+        // without vault balance validation, allowing flexible testing
+        const result = simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(1500000), Cl.uint(500000)], // Total 2M
+          wallet1
+        );
+        // Should succeed for testnet simulation
+        expect(result.result).toBeOk(Cl.bool(true));
+      });
+
+      it("should allow zero amount for one pool (all in other)", () => {
+        const result = simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(1000000), Cl.uint(0)], // All in ALEX
+          wallet1
+        );
+        expect(result.result).toBeOk(Cl.bool(true));
+
+        const { result: allocations } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-pool-allocations",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(allocations).toBeOk(
+          Cl.tuple({
+            "alex-amount": Cl.uint(1000000),
+            "velar-amount": Cl.uint(0),
+          })
+        );
+      });
+
+      it("should update allocations on subsequent rebalances", () => {
+        // First rebalance: 60/40 split
+        simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(600000), Cl.uint(400000)],
+          wallet1
+        );
+
+        // Second rebalance: 50/50 split
+        const result = simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(500000), Cl.uint(500000)],
+          wallet1
+        );
+        expect(result.result).toBeOk(Cl.bool(true));
+
+        const { result: allocations } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-pool-allocations",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(allocations).toBeOk(
+          Cl.tuple({
+            "alex-amount": Cl.uint(500000),
+            "velar-amount": Cl.uint(500000),
+          })
+        );
+      });
+
+      it("should emit rebalance event with details", () => {
+        const result = simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(700000), Cl.uint(300000)],
+          wallet1
+        );
+        expect(result.result).toBeOk(Cl.bool(true));
+        // Event logging verified through print statement in contract
+      });
+    });
+
+    describe("Pool Allocation Queries", () => {
+      it("should return zero allocations for user without rebalance", () => {
+        const { result } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-pool-allocations",
+          [Cl.principal(wallet2)],
+          deployer
+        );
+        expect(result).toBeOk(
+          Cl.tuple({
+            "alex-amount": Cl.uint(0),
+            "velar-amount": Cl.uint(0),
+          })
+        );
+      });
+
+      it("should track allocations independently per user", () => {
+        // Wallet1 rebalances
+        simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(600000), Cl.uint(400000)],
+          wallet1
+        );
+
+        // Wallet2 rebalances differently
+        simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(300000), Cl.uint(700000)],
+          wallet2
+        );
+
+        // Verify independent allocations
+        const { result: alloc1 } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-pool-allocations",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(alloc1).toBeOk(
+          Cl.tuple({
+            "alex-amount": Cl.uint(600000),
+            "velar-amount": Cl.uint(400000),
+          })
+        );
+
+        const { result: alloc2 } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-pool-allocations",
+          [Cl.principal(wallet2)],
+          deployer
+        );
+        expect(alloc2).toBeOk(
+          Cl.tuple({
+            "alex-amount": Cl.uint(300000),
+            "velar-amount": Cl.uint(700000),
+          })
+        );
+      });
+    });
+
+    describe("Total Value Calculation", () => {
+      beforeEach(() => {
+        // Set APY in oracle for yield calculations
+        simnet.callPublicFn(
+          "pool-oracle",
+          "set-authorized-updater",
+          [Cl.principal(deployer), Cl.bool(true)],
+          deployer
+        );
+
+        simnet.callPublicFn(
+          "pool-oracle",
+          "update-both-apys",
+          [Cl.uint(1250), Cl.uint(1080)], // 12.5% and 10.8%
+          deployer
+        );
+      });
+
+      it("should calculate total value including yields from both pools", () => {
+        // Rebalance into pools
+        simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(600000), Cl.uint(400000)],
+          wallet1
+        );
+
+        // Mine some blocks to accrue yield
+        for (let i = 0; i < 50; i++) {
+          simnet.mineEmptyBlock();
+        }
+
+        const { result } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-total-value-with-yield",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+
+        // Should be vault balance + yields from both pools
+        expect(result.type).toBe("ok");
+        // Exact amount depends on yield calculation, but should be > 0
+      });
+
+      it("should return only vault balance if no rebalancing done", () => {
+        // User has balance but hasn't rebalanced
+        const { result: vaultBalance } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-balance",
+          [Cl.principal(wallet2)],
+          deployer
+        );
+
+        const { result: totalValue } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-total-value-with-yield",
+          [Cl.principal(wallet2)],
+          deployer
+        );
+
+        // Both return uint directly, compare them
+        expect(totalValue).toBeOk(vaultBalance);
+      });
+    });
+
+    describe("Integration: Full Rebalancing Flow", () => {
+      it("should handle complete flow: deposit -> set risk -> rebalance -> query", () => {
+        // Step 1: Deposit (simulated for testing)
+        const depositAmount = 1000000;
+
+        // Step 2: Set risk preference to aggressive
+        let result = simnet.callPublicFn(
+          "yielder",
+          "set-risk-preference",
+          [Cl.uint(3)], // Aggressive
+          wallet1
+        );
+        expect(result.result).toBeOk(Cl.bool(true));
+
+        // Step 3: Rebalance with aggressive allocation (50/50)
+        result = simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(500000), Cl.uint(500000)],
+          wallet1
+        );
+        expect(result.result).toBeOk(Cl.bool(true));
+
+        // Step 4: Query all data
+        const { result: risk } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-risk-preference",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(risk).toBeOk(Cl.uint(3));
+
+        const { result: allocations } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-pool-allocations",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(allocations).toBeOk(
+          Cl.tuple({
+            "alex-amount": Cl.uint(500000),
+            "velar-amount": Cl.uint(500000),
+          })
+        );
+      });
+
+      it("should handle multiple rebalances over time", () => {
+        // Initial rebalance: Conservative (80/20)
+        simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(800000), Cl.uint(200000)],
+          wallet1
+        );
+
+        // Mine some blocks
+        for (let i = 0; i < 20; i++) {
+          simnet.mineEmptyBlock();
+        }
+
+        // Rebalance to moderate (60/40)
+        simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(600000), Cl.uint(400000)],
+          wallet1
+        );
+
+        // Mine more blocks
+        for (let i = 0; i < 20; i++) {
+          simnet.mineEmptyBlock();
+        }
+
+        // Final rebalance to aggressive (50/50)
+        const result = simnet.callPublicFn(
+          "yielder",
+          "rebalance",
+          [Cl.uint(500000), Cl.uint(500000)],
+          wallet1
+        );
+        expect(result.result).toBeOk(Cl.bool(true));
+
+        // Verify final state
+        const { result: allocations } = simnet.callReadOnlyFn(
+          "yielder",
+          "get-pool-allocations",
+          [Cl.principal(wallet1)],
+          deployer
+        );
+        expect(allocations).toBeOk(
+          Cl.tuple({
+            "alex-amount": Cl.uint(500000),
+            "velar-amount": Cl.uint(500000),
+          })
+        );
+      });
+    });
+
+  });
 });

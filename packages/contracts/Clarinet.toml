@@ -10,10 +10,52 @@ contract_id = 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token'
 
 [[project.requirements]]
 contract_id = 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard'
-[contracts.yielder]
+
+[contracts.pool-oracle]
+path = 'contracts/pool-oracle.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.pool-oracle-v2]
+path = 'contracts/pool-oracle.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.simulated-alex-pool]
+path = 'contracts/simulated-alex-pool.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.simulated-velar-pool]
+path = 'contracts/simulated-velar-pool.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.bityield-vault-v5]
 path = 'contracts/bityield-vault-updated.clar'
 clarity_version = 3
 epoch = 'latest'
+
+[contracts.pool-oracle-tests]
+path = 'contracts/pool-oracle.tests.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.simulated-alex-pool-tests]
+path = 'contracts/simulated-alex-pool.tests.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.simulated-velar-pool-tests]
+path = 'contracts/simulated-velar-pool.tests.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.bityield-vault-updated-tests]
+path = 'contracts/bityield-vault-updated.tests.clar'
+clarity_version = 3
+epoch = 'latest'
+
 [repl.analysis]
 passes = ['check_checker']
 

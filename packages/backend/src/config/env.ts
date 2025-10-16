@@ -26,6 +26,18 @@ const envSchema = z.object({
   VELAR_DEX_CONTRACT: z.string().optional(),
   ALEX_PROTOCOL_CONTRACT: z.string().optional(),
 
+  // BitYield Contract Addresses (testnet/mainnet)
+  BITYIELD_VAULT_CONTRACT: z.string().optional(),
+  BITYIELD_POOL_ORACLE_CONTRACT: z.string().optional(),
+  BITYIELD_ALEX_POOL_CONTRACT: z.string().optional(),
+  BITYIELD_VELAR_POOL_CONTRACT: z.string().optional(),
+  BITYIELD_DEPLOYER_ADDRESS: z.string().optional(),
+
+  // Oracle Sync Configuration
+  DEPLOYER_PRIVATE_KEY: z.string().optional(),
+  ORACLE_SYNC_ENABLED: z.string().transform(v => v === 'true').default('false'),
+  ORACLE_SYNC_INTERVAL_MS: z.string().transform(Number).pipe(z.number().positive()).default('600000'), // 10 minutes
+
   // Logging
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
 
@@ -108,6 +120,15 @@ export const config = {
   protocols: {
     velar: env.VELAR_DEX_CONTRACT,
     alex: env.ALEX_PROTOCOL_CONTRACT,
+  },
+  bityield: {
+    vault: env.BITYIELD_VAULT_CONTRACT,
+    poolOracle: env.BITYIELD_POOL_ORACLE_CONTRACT,
+    alexPool: env.BITYIELD_ALEX_POOL_CONTRACT,
+    velarPool: env.BITYIELD_VELAR_POOL_CONTRACT,
+    deployerAddress: env.BITYIELD_DEPLOYER_ADDRESS,
+    oracleSyncEnabled: env.ORACLE_SYNC_ENABLED,
+    oracleSyncInterval: env.ORACLE_SYNC_INTERVAL_MS,
   },
   logging: {
     level: env.LOG_LEVEL,

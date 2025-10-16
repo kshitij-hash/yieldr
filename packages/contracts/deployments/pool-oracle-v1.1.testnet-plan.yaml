@@ -1,0 +1,14 @@
+---
+id: 0
+name: Pool Oracle v1.1 Update (TVL Support)
+network: testnet
+plan:
+  batches:
+    - id: 0
+      transactions:
+        - contract-publish:
+            contract-name: pool-oracle
+            expected-sender: STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ
+            cost: 35500
+            path: contracts/pool-oracle.clar
+            clarity-version: 3

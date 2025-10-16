@@ -211,3 +211,130 @@ export const clearCache = async (): Promise<boolean> => {
     return false;
   }
 };
+
+// ============================================================================
+// BitYield Vault API Methods
+// ============================================================================
+
+import type {
+  BitYieldAPY,
+  BitYieldVaultStats,
+  BitYieldPoolsStats,
+  BitYieldUserBalance,
+  BitYieldComprehensiveStats,
+} from "@/types";
+
+/**
+ * Get APY data for both ALEX and Velar pools
+ */
+export const getBitYieldAPY = async (): Promise<BitYieldAPY | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<BitYieldAPY>>(
+      "/api/bityield/apy"
+    );
+
+    if (response.data?.metadata?.dataSource) {
+      latestDataSource = response.data.metadata.dataSource;
+    }
+
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("Error fetching BitYield APY:", error);
+    return null;
+  }
+};
+
+/**
+ * Get vault TVL and statistics
+ */
+export const getBitYieldVaultStats = async (): Promise<BitYieldVaultStats | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<BitYieldVaultStats>>(
+      "/api/bityield/tvl"
+    );
+
+    if (response.data?.metadata?.dataSource) {
+      latestDataSource = response.data.metadata.dataSource;
+    }
+
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("Error fetching BitYield vault stats:", error);
+    return null;
+  }
+};
+
+/**
+ * Get statistics for both pools
+ */
+export const getBitYieldPools = async (): Promise<BitYieldPoolsStats | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<BitYieldPoolsStats>>(
+      "/api/bityield/pools"
+    );
+
+    if (response.data?.metadata?.dataSource) {
+      latestDataSource = response.data.metadata.dataSource;
+    }
+
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("Error fetching BitYield pools:", error);
+    return null;
+  }
+};
+
+/**
+ * Get user balance and positions
+ */
+export const getBitYieldUserBalance = async (
+  address: string
+): Promise<BitYieldUserBalance | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<BitYieldUserBalance>>(
+      `/api/bityield/user/${address}`
+    );
+
+    if (response.data?.metadata?.dataSource) {
+      latestDataSource = response.data.metadata.dataSource;
+    }
+
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("Error fetching BitYield user balance:", error);
+    return null;
+  }
+};
+
+/**
+ * Get comprehensive vault statistics
+ */
+export const getBitYieldStats = async (): Promise<BitYieldComprehensiveStats | null> => {
+  try {
+    const response = await apiClient.get<ApiResponse<BitYieldComprehensiveStats>>(
+      "/api/bityield/stats"
+    );
+
+    if (response.data?.metadata?.dataSource) {
+      latestDataSource = response.data.metadata.dataSource;
+    }
+
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("Error fetching BitYield stats:", error);
+    return null;
+  }
+};
+
+/**
+ * Clear user-specific cache
+ */
+export const clearUserCache = async (address: string): Promise<boolean> => {
+  try {
+    await apiClient.delete(`/api/bityield/cache/user/${address}`);
+    return true;
+  } catch (error) {
+    console.error("Error clearing user cache:", error);
+    return false;
+  }
+};

@@ -300,3 +300,120 @@ export const depositFor = async (
     throw error;
   }
 };
+
+// Read-only function: Get user's risk preference
+export const getUserRiskPreference = async (
+  userAddress: string
+): Promise<number> => {
+  try {
+    const network = getNetwork();
+    const result = await fetchCallReadOnlyFunction({
+      contractAddress: CONTRACT_ADDRESS,
+      contractName: CONTRACT_NAME,
+      functionName: "get-risk-preference",
+      functionArgs: [principalCV(userAddress)],
+      network,
+      senderAddress: userAddress,
+    });
+
+    const jsonResult = cvToJSON(result);
+    return parseInt(jsonResult.value);
+  } catch (error) {
+    console.error("Error fetching risk preference:", error);
+    return 2; // Default to Moderate
+  }
+};
+
+// Read-only function: Get user's pool allocations
+export const getUserPoolAllocations = async (
+  userAddress: string
+): Promise<{ alexAmount: number; velarAmount: number }> => {
+  try {
+    const network = getNetwork();
+    const result = await fetchCallReadOnlyFunction({
+      contractAddress: CONTRACT_ADDRESS,
+      contractName: CONTRACT_NAME,
+      functionName: "get-pool-allocations",
+      functionArgs: [principalCV(userAddress)],
+      network,
+      senderAddress: userAddress,
+    });
+
+    const jsonResult = cvToJSON(result);
+
+    // Parse the response which is {alex-amount: uint, velar-amount: uint}
+    const alexAmount = parseInt(jsonResult.value["alex-amount"].value) / 1_000_000;
+    const velarAmount = parseInt(jsonResult.value["velar-amount"].value) / 1_000_000;
+
+    return {
+      alexAmount,
+      velarAmount,
+    };
+  } catch (error) {
+    console.error("Error fetching pool allocations:", error);
+    return { alexAmount: 0, velarAmount: 0 };
+  }
+};
+
+// Set user's risk preference
+export const setRiskPreference = async (
+  riskLevel: 1 | 2 | 3,
+  onFinish?: (data: { txId: string }) => void,
+  onCancel?: () => void
+): Promise<void> => {
+  const network = getNetwork();
+
+  try {
+    openContractCall({
+      contractAddress: CONTRACT_ADDRESS,
+      contractName: CONTRACT_NAME,
+      functionName: "set-risk-preference",
+      functionArgs: [uintCV(riskLevel)],
+      postConditionMode: PostConditionMode.Allow,
+      network,
+      onFinish: (data) => {
+        console.log("Set risk preference transaction submitted:", data.txId);
+        if (onFinish) onFinish(data);
+      },
+      onCancel: () => {
+        console.log("Set risk preference cancelled");
+        if (onCancel) onCancel();
+      },
+    });
+  } catch (error) {
+    console.error("Error setting risk preference:", error);
+    throw error;
+  }
+};
+
+// Rebalance funds between ALEX and Velar pools
+export const rebalancePools = async (
+  alexAmount: number,
+  velarAmount: number,
+  onFinish?: (data: { txId: string }) => void,
+  onCancel?: () => void
+): Promise<void> => {
+  const network = getNetwork();
+
+  try {
+    openContractCall({
+      contractAddress: CONTRACT_ADDRESS,
+      contractName: CONTRACT_NAME,
+      functionName: "rebalance",
+      functionArgs: [uintCV(alexAmount), uintCV(velarAmount)],
+      postConditionMode: PostConditionMode.Allow,
+      network,
+      onFinish: (data) => {
+        console.log("Rebalance transaction submitted:", data.txId);
+        if (onFinish) onFinish(data);
+      },
+      onCancel: () => {
+        console.log("Rebalance cancelled");
+        if (onCancel) onCancel();
+      },
+    });
+  } catch (error) {
+    console.error("Error rebalancing pools:", error);
+    throw error;
+  }
+};

@@ -6,6 +6,8 @@ import { protocolAggregator } from './protocols/aggregator.js';
 import { aiRecommender } from './ai/recommender.js';
 import { fallbackRecommender } from './ai/fallback.js';
 import { hiroClient } from './protocols/hiro-client.js';
+import { bityieldService } from './services/bityield.js';
+import { oracleSyncService } from './services/oracle-sync.js';
 import {
   UserPreferenceSchema,
   type ApiResponse,
@@ -289,6 +291,353 @@ app.get('/api/health', async (_req: Request, res: Response) => {
   res.status(statusCode).json(createResponse(health));
 });
 
+// ============================================================================
+// BITYIELD API ROUTES
+// ============================================================================
+
+/**
+ * GET /api/bityield/apy
+ * Get current APY values from pool oracle
+ */
+app.get('/api/bityield/apy', async (_req: Request, res: Response, _next: NextFunction) => {
+  try {
+    serverLogger.info('BitYield APY request received');
+
+    if (!bityieldService.isConfigured()) {
+      const errorResponse: ErrorResponse = {
+        error: 'Service Not Configured',
+        message: 'BitYield contracts not configured. Please set environment variables.',
+        timestamp: Date.now(),
+      };
+      res.status(503).json(createResponse(undefined, errorResponse));
+      return;
+    }
+
+    const apyData = await cache.getOrSet(
+      'bityield:apy',
+      async () => await bityieldService.getPoolAPYs(),
+      300 // 5 minutes TTL
+    );
+
+    const formatted = {
+      alex: {
+        apy: bityieldService.basisPointsToPercent(apyData.alexApy),
+        apyFormatted: bityieldService.formatAPY(apyData.alexApy),
+        basisPoints: apyData.alexApy,
+      },
+      velar: {
+        apy: bityieldService.basisPointsToPercent(apyData.velarApy),
+        apyFormatted: bityieldService.formatAPY(apyData.velarApy),
+        basisPoints: apyData.velarApy,
+      },
+      lastUpdated: apyData.lastUpdated,
+    };
+
+    res.json(createResponse(formatted));
+  } catch (error) {
+    _next(error);
+  }
+});
+
+/**
+ * GET /api/bityield/tvl
+ * Get total value locked in the vault
+ */
+app.get('/api/bityield/tvl', async (_req: Request, res: Response, _next: NextFunction) => {
+  try {
+    serverLogger.info('BitYield TVL request received');
+
+    if (!bityieldService.isConfigured()) {
+      const errorResponse: ErrorResponse = {
+        error: 'Service Not Configured',
+        message: 'BitYield contracts not configured. Please set environment variables.',
+        timestamp: Date.now(),
+      };
+      res.status(503).json(createResponse(undefined, errorResponse));
+      return;
+    }
+
+    const stats = await cache.getOrSet(
+      'bityield:vault-stats',
+      async () => await bityieldService.getVaultStats(),
+      60 // 1 minute TTL
+    );
+
+    const formatted = {
+      totalTvl: stats.totalTvl,
+      totalTvlBTC: bityieldService.satsToBTC(stats.totalTvl),
+      totalTvlFormatted: bityieldService.formatBTC(stats.totalTvl),
+      depositorCount: stats.depositorCount,
+      isPaused: stats.isPaused,
+    };
+
+    res.json(createResponse(formatted));
+  } catch (error) {
+    _next(error);
+  }
+});
+
+/**
+ * GET /api/bityield/pools
+ * Get statistics for all pools
+ */
+app.get('/api/bityield/pools', async (_req: Request, res: Response, _next: NextFunction) => {
+  try {
+    serverLogger.info('BitYield pools request received');
+
+    if (!bityieldService.isConfigured()) {
+      const errorResponse: ErrorResponse = {
+        error: 'Service Not Configured',
+        message: 'BitYield contracts not configured. Please set environment variables.',
+        timestamp: Date.now(),
+      };
+      res.status(503).json(createResponse(undefined, errorResponse));
+      return;
+    }
+
+    const [alexStats, velarStats] = await Promise.all([
+      cache.getOrSet('bityield:alex-pool', async () => await bityieldService.getPoolStats('alex'), 60),
+      cache.getOrSet('bityield:velar-pool', async () => await bityieldService.getPoolStats('velar'), 60),
+    ]);
+
+    const formatted = {
+      alex: {
+        tvl: alexStats.tvl,
+        tvlBTC: bityieldService.satsToBTC(alexStats.tvl),
+        tvlFormatted: bityieldService.formatBTC(alexStats.tvl),
+        apy: bityieldService.basisPointsToPercent(alexStats.apy),
+        apyFormatted: bityieldService.formatAPY(alexStats.apy),
+        isPaused: alexStats.isPaused,
+      },
+      velar: {
+        tvl: velarStats.tvl,
+        tvlBTC: bityieldService.satsToBTC(velarStats.tvl),
+        tvlFormatted: bityieldService.formatBTC(velarStats.tvl),
+        apy: bityieldService.basisPointsToPercent(velarStats.apy),
+        apyFormatted: bityieldService.formatAPY(velarStats.apy),
+        isPaused: velarStats.isPaused,
+      },
+      total: {
+        tvl: alexStats.tvl + velarStats.tvl,
+        tvlBTC: bityieldService.satsToBTC(alexStats.tvl + velarStats.tvl),
+        tvlFormatted: bityieldService.formatBTC(alexStats.tvl + velarStats.tvl),
+      },
+    };
+
+    res.json(createResponse(formatted));
+  } catch (error) {
+    _next(error);
+  }
+});
+
+/**
+ * GET /api/bityield/user/:address
+ * Get user's balance and positions
+ */
+app.get('/api/bityield/user/:address', async (req: Request, res: Response, _next: NextFunction) => {
+  try {
+    const { address } = req.params;
+    serverLogger.info('BitYield user request', { address });
+
+    if (!bityieldService.isConfigured()) {
+      const errorResponse: ErrorResponse = {
+        error: 'Service Not Configured',
+        message: 'BitYield contracts not configured. Please set environment variables.',
+        timestamp: Date.now(),
+      };
+      res.status(503).json(createResponse(undefined, errorResponse));
+      return;
+    }
+
+    // Increased TTL to reduce API calls - user balance doesn't change frequently
+    const balance = await cache.getOrSet(
+      `bityield:user:${address}`,
+      async () => await bityieldService.getUserBalance(address),
+      300 // 5 minutes TTL for user data (reduced from 30s to minimize API calls)
+    );
+
+    const formatted = {
+      vaultBalance: balance.vaultBalance,
+      vaultBalanceBTC: bityieldService.satsToBTC(balance.vaultBalance),
+      vaultBalanceFormatted: bityieldService.formatBTC(balance.vaultBalance),
+      allocations: {
+        alex: {
+          amount: balance.alexAllocation,
+          amountBTC: bityieldService.satsToBTC(balance.alexAllocation),
+          amountFormatted: bityieldService.formatBTC(balance.alexAllocation),
+          percentage: balance.vaultBalance > 0
+            ? ((balance.alexAllocation / balance.vaultBalance) * 100).toFixed(2)
+            : '0.00',
+        },
+        velar: {
+          amount: balance.velarAllocation,
+          amountBTC: bityieldService.satsToBTC(balance.velarAllocation),
+          amountFormatted: bityieldService.formatBTC(balance.velarAllocation),
+          percentage: balance.vaultBalance > 0
+            ? ((balance.velarAllocation / balance.vaultBalance) * 100).toFixed(2)
+            : '0.00',
+        },
+        total: balance.alexAllocation + balance.velarAllocation,
+      },
+      totalValueWithYield: {
+        amount: balance.totalValueWithYield,
+        amountBTC: bityieldService.satsToBTC(balance.totalValueWithYield),
+        amountFormatted: bityieldService.formatBTC(balance.totalValueWithYield),
+      },
+      yield: {
+        amount: balance.totalValueWithYield - balance.vaultBalance,
+        amountBTC: bityieldService.satsToBTC(balance.totalValueWithYield - balance.vaultBalance),
+        amountFormatted: bityieldService.formatBTC(balance.totalValueWithYield - balance.vaultBalance),
+      },
+      riskPreference: {
+        value: balance.riskPreference,
+        name: bityieldService.getRiskName(balance.riskPreference),
+      },
+    };
+
+    res.json(createResponse(formatted));
+  } catch (error) {
+    _next(error);
+  }
+});
+
+/**
+ * GET /api/bityield/stats
+ * Get comprehensive BitYield statistics
+ */
+app.get('/api/bityield/stats', async (_req: Request, res: Response, _next: NextFunction) => {
+  try {
+    serverLogger.info('BitYield comprehensive stats request');
+
+    if (!bityieldService.isConfigured()) {
+      const errorResponse: ErrorResponse = {
+        error: 'Service Not Configured',
+        message: 'BitYield contracts not configured. Please set environment variables.',
+        timestamp: Date.now(),
+      };
+      res.status(503).json(createResponse(undefined, errorResponse));
+      return;
+    }
+
+    // Fetch all data in parallel
+    const [vaultStats, apyData, alexPool, velarPool] = await Promise.all([
+      bityieldService.getVaultStats(),
+      bityieldService.getPoolAPYs(),
+      bityieldService.getPoolStats('alex'),
+      bityieldService.getPoolStats('velar'),
+    ]);
+
+    const formatted = {
+      vault: {
+        tvl: vaultStats.totalTvl,
+        tvlBTC: bityieldService.satsToBTC(vaultStats.totalTvl),
+        tvlFormatted: bityieldService.formatBTC(vaultStats.totalTvl),
+        depositors: vaultStats.depositorCount,
+        isPaused: vaultStats.isPaused,
+      },
+      pools: {
+        alex: {
+          tvl: alexPool.tvl,
+          tvlBTC: bityieldService.satsToBTC(alexPool.tvl),
+          tvlFormatted: bityieldService.formatBTC(alexPool.tvl),
+          apy: bityieldService.basisPointsToPercent(alexPool.apy),
+          apyFormatted: bityieldService.formatAPY(alexPool.apy),
+          isPaused: alexPool.isPaused,
+        },
+        velar: {
+          tvl: velarPool.tvl,
+          tvlBTC: bityieldService.satsToBTC(velarPool.tvl),
+          tvlFormatted: bityieldService.formatBTC(velarPool.tvl),
+          apy: bityieldService.basisPointsToPercent(velarPool.apy),
+          apyFormatted: bityieldService.formatAPY(velarPool.apy),
+          isPaused: velarPool.isPaused,
+        },
+        combined: {
+          tvl: alexPool.tvl + velarPool.tvl,
+          tvlBTC: bityieldService.satsToBTC(alexPool.tvl + velarPool.tvl),
+        },
+      },
+      apy: {
+        lastUpdated: apyData.lastUpdated,
+      },
+    };
+
+    res.json(createResponse(formatted));
+  } catch (error) {
+    _next(error);
+  }
+});
+
+/**
+ * GET /api/bityield/oracle/status
+ * Get oracle sync service status
+ */
+app.get('/api/bityield/oracle/status', (_req: Request, res: Response) => {
+  const stats = oracleSyncService.getStats();
+  const lastAPY = oracleSyncService.getLastAPY();
+  const isRunning = oracleSyncService.isRunning();
+
+  const status = {
+    enabled: config.bityield.oracleSyncEnabled,
+    running: isRunning,
+    stats: {
+      ...stats,
+      lastSyncAttemptAgo: stats.lastSyncAttempt ? Date.now() - stats.lastSyncAttempt : null,
+      lastSuccessfulSyncAgo: stats.lastSuccessfulSync
+        ? Date.now() - stats.lastSuccessfulSync
+        : null,
+    },
+    lastAPY: lastAPY
+      ? {
+          alex: {
+            apy: lastAPY.alexApy / 100,
+            apyFormatted: `${(lastAPY.alexApy / 100).toFixed(2)}%`,
+            basisPoints: lastAPY.alexApy,
+          },
+          velar: {
+            apy: lastAPY.velarApy / 100,
+            apyFormatted: `${(lastAPY.velarApy / 100).toFixed(2)}%`,
+            basisPoints: lastAPY.velarApy,
+          },
+        }
+      : null,
+  };
+
+  res.json(createResponse(status));
+});
+
+/**
+ * POST /api/bityield/oracle/sync
+ * Force an immediate oracle sync (admin endpoint)
+ */
+app.post('/api/bityield/oracle/sync', async (_req: Request, res: Response, _next: NextFunction) => {
+  try {
+    serverLogger.info('Manual oracle sync requested');
+
+    // if (!config.bityield.oracleSyncEnabled) {
+    //   const errorResponse: ErrorResponse = {
+    //     error: 'Service Disabled',
+    //     message: 'Oracle sync service is not enabled. Set ORACLE_SYNC_ENABLED=true to enable.',
+    //     timestamp: Date.now(),
+    //   };
+    //   res.status(503).json(createResponse(undefined, errorResponse));
+    //   return;
+    // }
+
+    await oracleSyncService.forceSync();
+
+    res.json(
+      createResponse({
+        message: 'Oracle sync completed',
+        stats: oracleSyncService.getStats(),
+        lastAPY: oracleSyncService.getLastAPY(),
+      })
+    );
+  } catch (error) {
+    _next(error);
+  }
+});
+
 /**
  * DELETE /api/cache
  * Clear cache (admin endpoint - should be protected in production)
@@ -310,6 +659,19 @@ app.delete('/api/cache', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
+ * DELETE /api/bityield/cache/user/:address
+ * Clear user-specific cache
+ */
+app.delete('/api/bityield/cache/user/:address', async (req: Request, res: Response): Promise<void> => {
+  const { address } = req.params;
+  serverLogger.info('User cache clear requested', { address });
+
+  const cleared = await cache.deletePattern(`bityield:user:${address}`);
+
+  res.json(createResponse({ cleared, address }));
+});
+
+/**
  * GET /
  * Root endpoint
  */
@@ -323,6 +685,16 @@ app.get('/', (_req: Request, res: Response) => {
       yields: 'GET /api/yields',
       yieldsByProtocol: 'GET /api/yields/:protocol',
       health: 'GET /api/health',
+      bityield: {
+        apy: 'GET /api/bityield/apy',
+        tvl: 'GET /api/bityield/tvl',
+        pools: 'GET /api/bityield/pools',
+        user: 'GET /api/bityield/user/:address',
+        stats: 'GET /api/bityield/stats',
+        oracleStatus: 'GET /api/bityield/oracle/status',
+        oracleSync: 'POST /api/bityield/oracle/sync',
+        clearUserCache: 'DELETE /api/bityield/cache/user/:address',
+      },
     },
   });
 });
@@ -353,17 +725,29 @@ app.listen(PORT, () => {
     openai: config.openai.model,
     redis: config.redis.url,
   });
+
+  // Start oracle sync service if enabled
+  if (config.bityield.oracleSyncEnabled) {
+    logger.info('Starting oracle sync service', {
+      interval: `${config.bityield.oracleSyncInterval / 1000}s`,
+    });
+    oracleSyncService.start();
+  } else {
+    logger.info('Oracle sync service disabled (set ORACLE_SYNC_ENABLED=true to enable)');
+  }
 });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
+  oracleSyncService.stop();
   await cache.close();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
+  oracleSyncService.stop();
   await cache.close();
   process.exit(0);
 });

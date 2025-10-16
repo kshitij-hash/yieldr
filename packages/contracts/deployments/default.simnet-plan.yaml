@@ -68,7 +68,7 @@ plan:
             emulated-sender: SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE
             path: "./.cache/requirements/SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.clar"
             clarity-version: 1
-      epoch: "2.1"
+      epoch: "2.0"
     - id: 1
       transactions:
         - emulated-contract-publish:
@@ -90,8 +90,43 @@ plan:
     - id: 2
       transactions:
         - emulated-contract-publish:
-            contract-name: yielder
+            contract-name: pool-oracle
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/pool-oracle.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: bityield-vault-updated-tests
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/bityield-vault-updated.tests.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: simulated-alex-pool
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/simulated-alex-pool.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: simulated-velar-pool
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/simulated-velar-pool.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: bityield-vault-v5
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/bityield-vault-updated.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: pool-oracle-tests
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/pool-oracle.tests.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: simulated-alex-pool-tests
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/simulated-alex-pool.tests.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: simulated-velar-pool-tests
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/simulated-velar-pool.tests.clar
             clarity-version: 3
       epoch: "3.2"
