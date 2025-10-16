@@ -1,33 +1,38 @@
 // Type definitions for BitYield Frontend
 
-// Yield Opportunity from backend
+// Yield Opportunity (flexible for both backend and live contract data)
 export interface YieldOpportunity {
+  id: string;
   protocol: string;
-  protocolType: 'lending' | 'liquidity_pool' | 'staking' | 'yield_farming' | 'auto_compounding';
-  poolId: string;
+  protocolType?: 'lending' | 'liquidity_pool' | 'staking' | 'yield_farming' | 'auto_compounding';
+  poolId?: string;
   poolName: string;
   apy: number;
-  apyBreakdown: {
+  apyBreakdown?: {
     base: number;
     rewards?: number;
     fees?: number;
   };
   tvl: number;
-  tvlInSBTC: number;
+  tvlInSBTC?: number;
   volume24h?: number;
+  fees24h?: number;
   riskLevel: 'low' | 'medium' | 'high';
-  riskFactors: string[];
+  riskFactors?: string[];
   minDeposit: number;
   lockPeriod: number;
-  depositFee: number;
-  withdrawalFee: number;
-  performanceFee: number;
+  depositFee?: number;
+  withdrawalFee?: number;
+  performanceFee?: number;
   impermanentLossRisk: boolean;
-  auditStatus: 'audited' | 'unaudited' | 'in-progress';
-  protocolAge: number;
+  auditStatus?: 'audited' | 'unaudited' | 'in-progress';
+  protocolAge?: number;
   contractAddress: string;
   description: string;
-  updatedAt: number;
+  updatedAt?: number;
+  lastUpdated?: Date;
+  tags?: string[];
+  isLive?: boolean;
 }
 
 // AI Recommendation from backend

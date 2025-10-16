@@ -10,9 +10,13 @@ import { openContractCall } from '@stacks/connect';
 import { getNetwork } from './walletService';
 import { VaultBalance } from '@/types';
 
-// Contract details
+// Contract details - Live Testnet Deployment
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || 'STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ';
-const CONTRACT_NAME = process.env.NEXT_PUBLIC_CONTRACT_NAME || 'bityield-vault-updated';
+const CONTRACT_NAME = process.env.NEXT_PUBLIC_CONTRACT_NAME || 'integrated-vault';
+
+// Additional deployed contracts
+const POOL_CONTRACT = process.env.NEXT_PUBLIC_POOL_CONTRACT || 'STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ.real-stx-sbtc-pool';
+const AUTO_VAULT_CONTRACT = process.env.NEXT_PUBLIC_AUTO_VAULT_CONTRACT || 'STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ.bityield-auto-vault';
 
 // Read-only function: Get user balance
 export const getUserVaultBalance = async (userAddress: string): Promise<number> => {
@@ -21,7 +25,7 @@ export const getUserVaultBalance = async (userAddress: string): Promise<number> 
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'get-balance',
+      functionName: 'get-user-deposit',
       functionArgs: [principalCV(userAddress)],
       network,
       senderAddress: userAddress,
@@ -42,14 +46,18 @@ export const getTotalTvl = async (): Promise<number> => {
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'get-total-tvl',
+      functionName: 'get-vault-info',
       functionArgs: [],
       network,
       senderAddress: CONTRACT_ADDRESS,
     });
 
     const jsonResult = cvToJSON(result);
-    return parseInt(jsonResult.value) / 100_000_000; // Convert sats to BTC
+    console.log('Vault info result:', jsonResult); // Debug log
+    
+    // The result should be a tuple with the vault info
+    const vaultData = jsonResult.value;
+    return parseInt(vaultData['total-sbtc-deposited'].value) / 100_000_000; // Convert sats to BTC
   } catch (error) {
     console.error('Error fetching TVL:', error);
     return 0;
@@ -63,14 +71,15 @@ export const getDepositorCount = async (): Promise<number> => {
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'get-depositor-count',
+      functionName: 'get-vault-info',
       functionArgs: [],
       network,
       senderAddress: CONTRACT_ADDRESS,
     });
 
     const jsonResult = cvToJSON(result);
-    return parseInt(jsonResult.value);
+    const vaultData = jsonResult.value;
+    return parseInt(vaultData['depositor-count'].value);
   } catch (error) {
     console.error('Error fetching depositor count:', error);
     return 0;
@@ -84,14 +93,15 @@ export const isContractPaused = async (): Promise<boolean> => {
     const result = await fetchCallReadOnlyFunction({
       contractAddress: CONTRACT_ADDRESS,
       contractName: CONTRACT_NAME,
-      functionName: 'is-paused',
+      functionName: 'get-vault-info',
       functionArgs: [],
       network,
       senderAddress: CONTRACT_ADDRESS,
     });
 
     const jsonResult = cvToJSON(result);
-    return jsonResult.value === true;
+    const vaultData = jsonResult.value;
+    return vaultData['contract-paused'].value === true;
   } catch (error) {
     console.error('Error checking pause status:', error);
     return false;
@@ -286,5 +296,64 @@ export const depositFor = async (
   } catch (error) {
     console.error('Error depositing sBTC for recipient:', error);
     throw error;
+  }
+};
+
+// Pool contract functions
+export const getPoolInfo = async (): Promise<{apy: number, tvl: number}> => {
+  try {
+    const network = getNetwork();
+    // POOL_CONTRACT format: "ADDRESS.CONTRACT-NAME"
+    const contractParts = POOL_CONTRACT.split('.');
+    const contractAddress = contractParts[0];
+    const contractName = contractParts[1];
+    
+    const result = await fetchCallReadOnlyFunction({
+      contractAddress,
+      contractName,
+      functionName: 'get-pool-info',
+      functionArgs: [],
+      network,
+      senderAddress: contractAddress,
+    });
+
+    const jsonResult = cvToJSON(result);
+    console.log('Pool info result:', jsonResult); // Debug log
+    
+    // The result should be a tuple with the pool info
+    const poolData = jsonResult.value;
+    return {
+      apy: parseInt(poolData['current-apy'].value) / 100, // Convert basis points to percentage
+      tvl: parseInt(poolData['tvl-usd'].value)
+    };
+  } catch (error) {
+    console.error('Error fetching pool info:', error);
+    return { apy: 0, tvl: 0 };
+  }
+};
+
+// Auto vault functions  
+export const getAutoVaultStrategies = async (): Promise<unknown[]> => {
+  try {
+    const network = getNetwork();
+    // AUTO_VAULT_CONTRACT format: "ADDRESS.CONTRACT-NAME"
+    const contractParts = AUTO_VAULT_CONTRACT.split('.');
+    const contractAddress = contractParts[0];
+    const contractName = contractParts[1];
+    
+    const result = await fetchCallReadOnlyFunction({
+      contractAddress,
+      contractName,
+      functionName: 'get-protocol-configs',
+      functionArgs: [],
+      network,
+      senderAddress: contractAddress,
+    });
+
+    const jsonResult = cvToJSON(result);
+    return jsonResult.value || [];
+  } catch (error) {
+    console.error('Error fetching auto vault strategies:', error);
+    return [];
   }
 };

@@ -6,6 +6,8 @@ import { protocolAggregator } from './protocols/aggregator.js';
 import { aiRecommender } from './ai/recommender.js';
 import { fallbackRecommender } from './ai/fallback.js';
 import { hiroClient } from './protocols/hiro-client.js';
+import autoInvestRoutes from './routes/auto-invest.js';
+import oracleRoutes from './routes/oracle.js';
 import {
   UserPreferenceSchema,
   type ApiResponse,
@@ -84,6 +86,12 @@ function errorHandler(err: Error, req: Request, res: Response, _next: NextFuncti
 // ============================================================================
 // API ROUTES
 // ============================================================================
+
+// Auto-investment routes
+app.use('/api/auto-invest', autoInvestRoutes);
+
+// Oracle routes
+app.use('/api/oracle', oracleRoutes);
 
 /**
  * POST /api/recommend
@@ -284,6 +292,20 @@ app.get('/', (_req: Request, res: Response) => {
       yields: 'GET /api/yields',
       yieldsByProtocol: 'GET /api/yields/:protocol',
       health: 'GET /api/health',
+      // Auto-investment endpoints
+      generateStrategy: 'POST /api/auto-invest/generate-strategy',
+      executeStrategy: 'POST /api/auto-invest/execute-strategy',
+      checkRebalancing: 'POST /api/auto-invest/check-rebalancing',
+      getStrategy: 'GET /api/auto-invest/strategy/:strategyId',
+      getUserStrategies: 'GET /api/auto-invest/user/:userAddress/strategies',
+      // Oracle endpoints (Real-time mainnet data mirror)
+      oracleStatus: 'GET /api/oracle/status',
+      startOracle: 'POST /api/oracle/start',
+      stopOracle: 'POST /api/oracle/stop',
+      forceUpdate: 'POST /api/oracle/force-update',
+      mainnetData: 'GET /api/oracle/mainnet-data',
+      simulatorData: 'GET /api/oracle/simulator-data',
+      dataComparison: 'GET /api/oracle/comparison',
     },
   });
 });

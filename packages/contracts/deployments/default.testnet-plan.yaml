@@ -19,38 +19,25 @@ plan:
       epoch: "2.0"
     - id: 1
       transactions:
-        - requirement-publish:
-            contract-id: SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-registry
-            remap-sender: ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT
-            remap-principals:
-              SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4: ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT
-            cost: 112090
-            path: "./.cache/requirements/SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-registry.clar"
-            clarity-version: 3
-        - requirement-publish:
-            contract-id: SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token
-            remap-sender: ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT
-            remap-principals:
-              SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4: ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT
-            cost: 47590
-            path: "./.cache/requirements/SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token.clar"
-            clarity-version: 3
-        - requirement-publish:
-            contract-id: SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-deposit
-            remap-sender: ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT
-            remap-principals:
-              SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4: ST1F7QA2MDF17S807EPA36TSS8AMEFY4KA9TVGWXT
-            cost: 41510
-            path: "./.cache/requirements/SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-deposit.clar"
-            clarity-version: 3
-      epoch: "3.0"
-    - id: 2
-      transactions:
         - contract-publish:
-            contract-name: bityield-vault-updated
+            contract-name: real-stx-sbtc-pool
             expected-sender: STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ
-            cost: 91460
-            path: contracts/bityield-vault-updated.clar
+            cost: 147940
+            path: contracts/real-stx-sbtc-pool.clar
             anchor-block-only: true
-            clarity-version: 3
+            clarity-version: 2
+        - contract-publish:
+            contract-name: integrated-vault
+            expected-sender: STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ
+            cost: 117910
+            path: contracts/integrated-vault.clar
+            anchor-block-only: true
+            clarity-version: 2
+        - contract-publish:
+            contract-name: bityield-auto-vault
+            expected-sender: STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ
+            cost: 127590
+            path: contracts/bityield-auto-vault.clar
+            anchor-block-only: true
+            clarity-version: 2
       epoch: "3.2"

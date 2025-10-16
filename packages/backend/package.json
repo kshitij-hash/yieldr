@@ -10,6 +10,8 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest watch",
+    "test:testnet-system": "tsx src/scripts/test-testnet-system.ts",
+    "test:real-integration": "tsx src/scripts/test-real-integration.ts",
     "worker": "tsx src/workers/yield-updater.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\""

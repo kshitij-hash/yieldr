@@ -13,7 +13,9 @@
     "format": "clarinet format --in-place",
     "deploy:generate": "clarinet deployments generate --testnet",
     "deploy:check": "clarinet deployments check",
-    "deploy:testnet": "clarinet deployments apply --testnet"
+    "deploy:testnet": "clarinet deployments apply --testnet",
+    "deploy:simple": "npx tsx deployments/simple-deployment.ts testnet",
+    "deploy:mainnet": "npx tsx deployments/simple-deployment.ts mainnet"
   },
   "author": "",
   "license": "MIT",

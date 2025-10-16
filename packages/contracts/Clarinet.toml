@@ -1,19 +1,26 @@
 [project]
-name = 'stacks-project'
-description = ''
+name = 'bityield-contracts'
+description = 'BitYield Smart Contracts for sBTC Yield Optimization'
 authors = []
 telemetry = false
 cache_dir = './.cache'
 
 [[project.requirements]]
-contract_id = 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token'
-
-[[project.requirements]]
 contract_id = 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard'
 
-[contracts.bityield-vault-updated]
-path = 'contracts/bityield-vault-updated.clar'
-clarity_version = 3
+[contracts.bityield-auto-vault]
+path = 'contracts/bityield-auto-vault.clar'
+clarity_version = 2
+epoch = 'latest'
+
+[contracts.integrated-vault]
+path = 'contracts/integrated-vault.clar'
+clarity_version = 2
+epoch = 'latest'
+
+[contracts.real-stx-sbtc-pool]
+path = 'contracts/real-stx-sbtc-pool.clar'
+clarity_version = 2
 epoch = 'latest'
 [repl.analysis]
 passes = ['check_checker']

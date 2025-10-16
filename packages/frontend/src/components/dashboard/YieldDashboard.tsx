@@ -8,10 +8,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ProtocolCard } from './ProtocolCard';
 import { YieldCharts } from './YieldCharts';
-import { useYields } from '@/hooks/useYields';
+import { LivePoolStats } from './LivePoolStats';
+import { useLiveYields } from '@/hooks/useLiveYields';
 
 export const YieldDashboard: React.FC = () => {
-  const { yields, isLoading, error, lastUpdated, refetch, sortedByApy } = useYields();
+  const { yields, isLoading, error, lastUpdated, refetch, sortedByApy } = useLiveYields();
 
   // Format last updated time
   const formatLastUpdated = (date: Date | null) => {
@@ -67,6 +68,9 @@ export const YieldDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Live Pool Statistics */}
+      <LivePoolStats />
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
