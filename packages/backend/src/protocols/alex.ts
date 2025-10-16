@@ -1,13 +1,50 @@
 import { createLogger } from '../config/logger.js';
 import { config } from '../config/env.js';
-import type { AlexYieldFarm } from '../types/protocols.js';
 import { Protocol, ProtocolType, RiskLevel, type YieldOpportunity } from '../types/yield.js';
+import { priceOracle } from '../services/price-oracle.js';
 
 const logger = createLogger('alex-protocol');
 
+// ALEX API base URL
+const ALEX_API_BASE = 'https://api.alexgo.io';
+
+/**
+ * ALEX API Swap Pair Response
+ */
+interface AlexSwapPair {
+  id: number; // pool_token_id
+  base?: string; // token contract name
+  baseSymbol?: string; // human-readable symbol
+  baseId?: string; // full contract ID
+  quote?: string; // token contract name
+  quoteSymbol?: string; // human-readable symbol
+  quoteId?: string; // full contract ID
+  baseVolume?: number;
+  quoteVolume?: number;
+  lastBasePriceInUSD?: number;
+  lastQuotePriceInUSD?: number;
+}
+
+/**
+ * ALEX Pool Stats Response
+ */
+interface AlexPoolStats {
+  pool_token_id: number;
+  base_token: string;
+  quote_token: string;
+  base_symbol?: string;
+  quote_symbol?: string;
+  tvl?: number;
+  volume_24h?: number;
+  volume_7d?: number;
+  fees_24h?: number;
+  apr?: number;
+  liquidity?: number;
+}
+
 /**
  * ALEX Protocol Integration
- * Fetches sBTC staking and yield farming data from ALEX on Stacks
+ * Fetches sBTC staking and yield farming data from ALEX Protocol API
  */
 export class AlexProtocolIntegration {
   private contractAddress: string;
@@ -15,7 +52,7 @@ export class AlexProtocolIntegration {
 
   constructor() {
     const contractId =
-      config.protocols.alex || 'SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.alex-vault';
+      config.protocols.alex || 'SP3K8BC0PPEVCV7NZ6QSRWPQ2JE9E5B6N3PA0KBR9.amm-pool-v2-01';
     const [address, name] = contractId.split('.');
     this.contractAddress = address;
     this.contractName = name;
@@ -23,35 +60,50 @@ export class AlexProtocolIntegration {
     logger.info('ALEX Protocol integration initialized', {
       contractAddress: this.contractAddress,
       contractName: this.contractName,
+      apiBase: ALEX_API_BASE,
     });
   }
 
   /**
-   * Fetch all sBTC yield opportunities from ALEX
+   * Fetch all sBTC yield opportunities from ALEX API
    */
   async fetchYieldOpportunities(): Promise<YieldOpportunity[]> {
     try {
-      logger.info('Fetching ALEX yield farms');
+      logger.info('Fetching ALEX yield opportunities from API');
 
-      const farmIds = await this.getFarmIds();
+      // Get all swap pairs
+      const allPairs = await this.fetchAllSwapPairs();
+
+      // Filter for sBTC pairs
+      const sbtcPairs = allPairs.filter(
+        pair =>
+          pair.base?.toLowerCase().includes('sbtc') ||
+          pair.quote?.toLowerCase().includes('sbtc') ||
+          pair.baseSymbol?.toLowerCase().includes('sbtc') ||
+          pair.quoteSymbol?.toLowerCase().includes('sbtc')
+      );
+
+      logger.debug('Found sBTC pairs', { count: sbtcPairs.length });
 
       const opportunities: YieldOpportunity[] = [];
 
-      for (const farmId of farmIds) {
+      // Fetch detailed stats for each sBTC pair
+      for (const pair of sbtcPairs) {
         try {
-          const farmData = await this.fetchFarmData(farmId);
-          if (farmData) {
-            const opportunity = this.transformToYieldOpportunity(farmData);
+          const poolStats = await this.fetchPoolStats(pair.id);
+          const opportunity = await this.transformToYieldOpportunity(pair, poolStats);
+
+          if (opportunity) {
             opportunities.push(opportunity);
           }
         } catch (error) {
-          logger.error(`Failed to fetch farm ${farmId}`, {
+          logger.error(`Failed to process pool ${pair.id}`, {
             error: error instanceof Error ? error.message : String(error),
           });
         }
       }
 
-      logger.info(`Fetched ${opportunities.length} ALEX yield farms`);
+      logger.info(`Fetched ${opportunities.length} ALEX yield opportunities`);
       return opportunities;
     } catch (error) {
       logger.error('Failed to fetch ALEX opportunities', {
@@ -62,273 +114,358 @@ export class AlexProtocolIntegration {
   }
 
   /**
-   * Get list of sBTC farm IDs
+   * Fetch all swap pairs from ALEX API
    */
-  private async getFarmIds(): Promise<string[]> {
+  private async fetchAllSwapPairs(): Promise<AlexSwapPair[]> {
+    const url = `${ALEX_API_BASE}/v1/allswaps`;
+
     try {
-      // Mock farm IDs - in production, query from contract
-      return ['sbtc-staking-farm', 'sbtc-alex-lp-farm', 'sbtc-auto-vault'];
+      logger.debug('Fetching all swap pairs from ALEX API');
+
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as AlexSwapPair[];
+      logger.debug('Fetched swap pairs', { count: data.length });
+
+      return data;
     } catch (error) {
-      logger.warn('Using fallback farm IDs');
-      return ['sbtc-staking-farm'];
+      logger.error('Failed to fetch swap pairs', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return [];
     }
   }
 
   /**
-   * Fetch individual farm data
+   * Fetch pool statistics for a specific pool
    */
-  private async fetchFarmData(farmId: string): Promise<AlexYieldFarm | null> {
+  private async fetchPoolStats(poolTokenId: number): Promise<AlexPoolStats | null> {
+    const url = `${ALEX_API_BASE}/v1/pool_stats/${poolTokenId}?limit=1`;
+
     try {
-      const [farmType, baseApy, rewardApy, tvl, rewardData] = await Promise.all([
-        this.getFarmType(farmId),
-        this.getBaseAPY(farmId),
-        this.getRewardAPY(farmId),
-        this.getFarmTVL(farmId),
-        this.getRewardData(farmId),
-      ]);
+      logger.debug('Fetching pool stats from ALEX API', { poolTokenId });
 
-      const boostedApy = rewardApy * 2.5; // Max boost typically 2.5x
-      const totalApy = baseApy + rewardApy;
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
 
-      return {
-        farmId,
-        farmName: this.getFarmName(farmId, farmType),
-        contractAddress: `${this.contractAddress}.${this.contractName}`,
-        type: farmType,
-        stakingToken: 'sBTC',
-        rewardToken: 'ALEX',
-        baseApy,
-        rewardApy,
-        boostedApy,
-        totalApy,
-        totalStaked: tvl / 100000, // Convert to sBTC units
-        totalStakedUsd: tvl,
-        dailyRewards: rewardData.dailyRewards,
-        rewardTokenPrice: rewardData.alexPrice,
-        autoCompound: farmType === 'auto_vault',
-        compoundFrequency: farmType === 'auto_vault' ? 12 : 0, // Every 12 hours
-        boostMultiplier: 2.5,
-        boostRequirement: 10000, // 10k ALEX tokens for max boost
-      };
+      if (!response.ok) {
+        logger.warn(`Pool stats not available for ${poolTokenId}`);
+        return null;
+      }
+
+      const data = (await response.json()) as AlexPoolStats[];
+
+      if (data.length === 0) {
+        return null;
+      }
+
+      logger.debug('Fetched pool stats successfully', { poolTokenId });
+      return data[0];
     } catch (error) {
-      logger.error(`Failed to fetch farm data for ${farmId}`);
+      logger.error('Failed to fetch pool stats', {
+        poolTokenId,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return null;
     }
   }
 
   /**
-   * Get farm type
+   * Fetch pool TVL from liquidity endpoint
    */
-  private async getFarmType(farmId: string): Promise<'staking' | 'lp_farming' | 'auto_vault'> {
-    if (farmId.includes('auto-vault')) return 'auto_vault';
-    if (farmId.includes('lp')) return 'lp_farming';
-    return 'staking';
-  }
+  private async fetchPoolTVL(poolTokenId: number): Promise<number | null> {
+    const url = `${ALEX_API_BASE}/v1/pool_liquidity/${poolTokenId}`;
 
-  /**
-   * Get farm name
-   */
-  private getFarmName(farmId: string, type: string): string {
-    const typeNames = {
-      staking: 'sBTC Staking',
-      lp_farming: 'sBTC-ALEX LP Farming',
-      auto_vault: 'sBTC Auto-Compounding Vault',
-    };
-    return typeNames[type as keyof typeof typeNames] || `ALEX ${farmId}`;
-  }
-
-  /**
-   * Get base APY (from staking/LP)
-   */
-  private async getBaseAPY(farmId: string): Promise<number> {
     try {
-      // Mock implementation - in production, calculate from on-chain data
-      if (farmId.includes('lp')) {
-        return 8 + Math.random() * 7; // 8-15% for LP farming
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        return null;
       }
-      return 3 + Math.random() * 4; // 3-7% for simple staking
-    } catch (error) {
-      logger.error(`Failed to get base APY for ${farmId}`);
-      return 0;
-    }
-  }
 
-  /**
-   * Get ALEX reward APY
-   */
-  private async getRewardAPY(farmId: string): Promise<number> {
-    try {
-      // Mock implementation
-      if (farmId.includes('auto-vault')) {
-        return 12 + Math.random() * 8; // 12-20% for auto-vault
+      const data = (await response.json()) as {
+        token: number;
+        liquidity_value?: Array<{ block_height: number; liquidity: number }>;
+      };
+
+      // Get the latest liquidity value from the array
+      if (data.liquidity_value && data.liquidity_value.length > 0) {
+        const latestLiquidity = data.liquidity_value[data.liquidity_value.length - 1];
+        logger.debug('Fetched pool liquidity', {
+          poolTokenId,
+          liquidity: latestLiquidity.liquidity
+        });
+        return latestLiquidity.liquidity;
       }
-      if (farmId.includes('lp')) {
-        return 15 + Math.random() * 10; // 15-25% for LP
+
+      return null;
+    } catch (error) {
+      logger.debug('Failed to fetch pool TVL', { poolTokenId });
+      return null;
+    }
+  }
+
+  /**
+   * Fetch pool volume
+   */
+  private async fetchPoolVolume(poolTokenId: number): Promise<{ volume24h: number; volume7d: number } | null> {
+    try {
+      const [volume24hResponse, volume7dResponse] = await Promise.all([
+        fetch(`${ALEX_API_BASE}/v1/pool_volume/${poolTokenId}`, {
+          headers: { Accept: 'application/json' },
+        }),
+        fetch(`${ALEX_API_BASE}/v1/volume_7d/${poolTokenId}`, {
+          headers: { Accept: 'application/json' },
+        }),
+      ]);
+
+      const volume24h = volume24hResponse.ok
+        ? parseFloat(((await volume24hResponse.json()) as { volume?: string }).volume || '0')
+        : 0;
+
+      const volume7d = volume7dResponse.ok
+        ? parseFloat(((await volume7dResponse.json()) as { volume?: string }).volume || '0')
+        : 0;
+
+      return { volume24h, volume7d };
+    } catch (error) {
+      logger.debug('Failed to fetch pool volume', { poolTokenId });
+      return null;
+    }
+  }
+
+  /**
+   * Transform ALEX pool data to standardized YieldOpportunity
+   */
+  private async transformToYieldOpportunity(
+    pair: AlexSwapPair,
+    poolStats: AlexPoolStats | null
+  ): Promise<YieldOpportunity | null> {
+    try {
+      // Get BTC price for calculations
+      const btcPrice = await priceOracle.getBitcoinPrice();
+
+      // Determine which token is sBTC
+      const isSbtcBase = pair.baseSymbol?.toLowerCase().includes('sbtc') ||
+                         pair.base?.toLowerCase().includes('sbtc');
+
+      const sbtcSymbol = 'sBTC';
+      const otherSymbol = isSbtcBase ? pair.quoteSymbol || 'Unknown' : pair.baseSymbol || 'Unknown';
+
+      // Get TVL (from stats or fetch separately)
+      let tvl = poolStats?.tvl || poolStats?.liquidity || 0;
+      if (!tvl || tvl === 0) {
+        const fetchedTVL = await this.fetchPoolTVL(pair.id);
+        tvl = fetchedTVL || 0;
       }
-      return 10 + Math.random() * 5; // 10-15% for staking
+
+      // Skip pools with zero TVL - they are not useful opportunities
+      if (!tvl || tvl === 0) {
+        logger.debug(`Skipping pool ${pair.id} - zero TVL`, {
+          poolId: pair.id,
+          poolName: `${pair.baseSymbol}-${pair.quoteSymbol}`,
+        });
+        return null;
+      }
+
+      // Get volume from pair data
+      let volume24h = poolStats?.volume_24h || 0;
+
+      if (!volume24h && pair.baseVolume && pair.quoteVolume) {
+        // Calculate volume from base and quote volumes
+        volume24h = (pair.baseVolume || 0) + (pair.quoteVolume || 0);
+      }
+
+      if (!volume24h) {
+        const volumeData = await this.fetchPoolVolume(pair.id);
+        volume24h = volumeData?.volume24h || 0;
+      }
+
+      // Calculate fees (ALEX charges 0.3% trading fee)
+      const fees24h = volume24h * 0.003;
+
+      // Calculate trading fee APY
+      const tradingFeeApy = this.calculateTradingFeeAPY(fees24h, tvl);
+
+      // Get reward APY from stats or estimate
+      const rewardApy = poolStats?.apr || this.estimateRewardAPY(tvl);
+
+      // Total APY
+      const totalApy = tradingFeeApy + rewardApy;
+
+      // Pool name
+      const poolName = `${sbtcSymbol}-${otherSymbol} LP`;
+
+      // Calculate risk level
+      const riskLevel = this.calculateRiskLevel(tvl, otherSymbol, volume24h);
+
+      // Determine protocol type
+      const protocolType = this.getProtocolType(poolName);
+
+      return {
+        protocol: Protocol.ALEX,
+        protocolType,
+        poolId: pair.id.toString(),
+        poolName,
+
+        apy: totalApy,
+        apyBreakdown: {
+          base: tradingFeeApy,
+          rewards: rewardApy,
+          fees: tradingFeeApy,
+        },
+
+        tvl,
+        tvlInSBTC: tvl / btcPrice / 2, // Estimate sBTC amount (half of pool)
+        volume24h,
+
+        riskLevel,
+        riskFactors: this.identifyRiskFactors(tvl, otherSymbol, volume24h, totalApy),
+
+        minDeposit: 5000000, // 0.05 sBTC in sats
+        lockPeriod: 0, // No lock for ALEX pools
+
+        depositFee: 0,
+        withdrawalFee: 0,
+        performanceFee: 0,
+
+        impermanentLossRisk: true, // LP positions have IL risk
+        auditStatus: 'audited',
+        protocolAge: 365, // ALEX launched ~1 year ago (Jan 2024)
+
+        contractAddress: `${this.contractAddress}.${this.contractName}`,
+        description: `Provide ${poolName} liquidity on ALEX to earn ${totalApy.toFixed(2)}% APY from trading fees (${tradingFeeApy.toFixed(2)}%) and ALEX rewards (${rewardApy.toFixed(2)}%). ALEX is a full-service Bitcoin DeFi platform on Stacks.`,
+        updatedAt: Date.now(),
+      };
     } catch (error) {
-      logger.error(`Failed to get reward APY for ${farmId}`);
-      return 0;
+      logger.error('Failed to transform pool data', {
+        poolId: pair.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
     }
   }
 
   /**
-   * Get farm TVL
+   * Calculate trading fee APY
    */
-  private async getFarmTVL(farmId: string): Promise<number> {
-    try {
-      const btcPrice = 100000;
-      const sbtcAmount = 30 + Math.random() * 120; // 30-150 sBTC
-      return sbtcAmount * btcPrice;
-    } catch (error) {
-      logger.error(`Failed to get TVL for ${farmId}`);
-      return 0;
+  private calculateTradingFeeAPY(fees24h: number, tvl: number): number {
+    if (tvl === 0) return 0;
+    const annualFees = fees24h * 365;
+    return (annualFees / tvl) * 100;
+  }
+
+  /**
+   * Estimate reward APY based on TVL
+   */
+  private estimateRewardAPY(tvl: number): number {
+    // ALEX provides ALEX token rewards
+    // Higher TVL pools typically have lower reward APY
+    if (tvl > 15000000) return 10; // > $15M
+    if (tvl > 10000000) return 15; // > $10M
+    if (tvl > 5000000) return 20; // > $5M
+    if (tvl > 2000000) return 25; // > $2M
+    return 30; // Small pools get higher rewards
+  }
+
+  /**
+   * Get protocol type based on pool name
+   */
+  private getProtocolType(poolName: string): ProtocolType {
+    if (poolName.includes('auto') || poolName.includes('Auto')) {
+      return ProtocolType.AUTO_COMPOUNDING;
     }
-  }
-
-  /**
-   * Get reward token data
-   */
-  private async getRewardData(
-    farmId: string
-  ): Promise<{ dailyRewards: number; alexPrice: number }> {
-    try {
-      // Mock ALEX token price and daily rewards
-      const alexPrice = 0.15 + Math.random() * 0.1; // $0.15-$0.25 per ALEX
-      const dailyRewards = 10000 + Math.random() * 40000; // 10k-50k ALEX per day
-
-      return { dailyRewards, alexPrice };
-    } catch (error) {
-      logger.error(`Failed to get reward data for ${farmId}`);
-      return { dailyRewards: 0, alexPrice: 0 };
+    if (poolName.includes('farm') || poolName.includes('Farm')) {
+      return ProtocolType.YIELD_FARMING;
     }
-  }
-
-  /**
-   * Transform ALEX farm data to standardized YieldOpportunity
-   */
-  private transformToYieldOpportunity(farm: AlexYieldFarm): YieldOpportunity {
-    const riskLevel = this.calculateRiskLevel(farm);
-    const protocolType = this.mapFarmTypeToProtocolType(farm.type);
-
-    return {
-      protocol: Protocol.ALEX,
-      protocolType,
-      poolId: farm.farmId,
-      poolName: farm.farmName,
-
-      apy: farm.totalApy,
-      apyBreakdown: {
-        base: farm.baseApy,
-        rewards: farm.rewardApy,
-      },
-
-      tvl: farm.totalStakedUsd,
-      tvlInSBTC: farm.totalStaked,
-
-      riskLevel,
-      riskFactors: this.identifyRiskFactors(farm),
-
-      minDeposit: 5000000, // 0.05 sBTC in sats
-      lockPeriod: farm.type === 'staking' ? 7 : 0, // 7 days for staking, none for LP/vault
-
-      depositFee: 0,
-      withdrawalFee: farm.type === 'auto_vault' ? 0.5 : 0, // 0.5% for auto-vault
-      performanceFee: farm.type === 'auto_vault' ? 10 : 0, // 10% for auto-vault
-
-      impermanentLossRisk: farm.type === 'lp_farming', // Only LP has IL risk
-      auditStatus: 'audited',
-      protocolAge: 365, // Mock: 1 year old
-
-      contractAddress: farm.contractAddress,
-      description: this.generateDescription(farm),
-      updatedAt: Date.now(),
-    };
-  }
-
-  /**
-   * Map farm type to protocol type
-   */
-  private mapFarmTypeToProtocolType(farmType: string): ProtocolType {
-    switch (farmType) {
-      case 'staking':
-        return ProtocolType.STAKING;
-      case 'lp_farming':
-        return ProtocolType.YIELD_FARMING;
-      case 'auto_vault':
-        return ProtocolType.AUTO_COMPOUNDING;
-      default:
-        return ProtocolType.STAKING;
-    }
-  }
-
-  /**
-   * Generate farm description
-   */
-  private generateDescription(farm: AlexYieldFarm): string {
-    const baseDesc = `Earn ${farm.totalApy.toFixed(2)}% APY by ${farm.type === 'staking' ? 'staking sBTC' : farm.type === 'lp_farming' ? 'providing sBTC-ALEX liquidity' : 'depositing in auto-compounding vault'}. `;
-
-    const rewardDesc = `Rewards: ${farm.baseApy.toFixed(2)}% base + ${farm.rewardApy.toFixed(2)}% in ALEX tokens. `;
-
-    const boostDesc =
-      farm.boostMultiplier > 1
-        ? `Boost up to ${farm.boostedApy.toFixed(2)}% APY by staking ${farm.boostRequirement} ALEX tokens. `
-        : '';
-
-    const autoCompDesc = farm.autoCompound
-      ? `Auto-compounds every ${farm.compoundFrequency} hours. `
-      : '';
-
-    return baseDesc + rewardDesc + boostDesc + autoCompDesc;
+    return ProtocolType.LIQUIDITY_POOL;
   }
 
   /**
    * Calculate risk level
    */
-  private calculateRiskLevel(farm: AlexYieldFarm): RiskLevel {
-    // LP farming has higher risk due to IL
-    if (farm.type === 'lp_farming') return RiskLevel.HIGH;
+  private calculateRiskLevel(
+    tvl: number,
+    otherTokenSymbol: string,
+    volume24h: number
+  ): RiskLevel {
+    // Volatile pairs = higher risk
+    if (otherTokenSymbol === 'STX' || otherTokenSymbol === 'ALEX') {
+      return RiskLevel.HIGH;
+    }
 
-    // Low TVL = higher risk
-    if (farm.totalStakedUsd < 3000000) return RiskLevel.MEDIUM; // < $3M
+    // Low liquidity = higher risk
+    if (tvl < 1000000) return RiskLevel.HIGH; // < $1M
+    if (tvl < 3000000) return RiskLevel.MEDIUM; // < $3M
 
-    // Auto-vaults are generally lower risk
-    if (farm.type === 'auto_vault') return RiskLevel.LOW;
+    // Low volume = higher risk
+    if (volume24h < 50000 && tvl > 0) {
+      const turnover = volume24h / tvl;
+      if (turnover < 0.01) return RiskLevel.MEDIUM; // < 1% daily turnover
+    }
 
-    // Simple staking is medium risk
-    return RiskLevel.MEDIUM;
+    // Stablecoin pairs = lower risk
+    if (otherTokenSymbol === 'USDA' || otherTokenSymbol === 'USDC') {
+      return RiskLevel.MEDIUM; // Still have some IL risk
+    }
+
+    return RiskLevel.MEDIUM; // Default for LP positions
   }
 
   /**
    * Identify risk factors
    */
-  private identifyRiskFactors(farm: AlexYieldFarm): string[] {
+  private identifyRiskFactors(
+    tvl: number,
+    otherTokenSymbol: string,
+    volume24h: number,
+    apy: number
+  ): string[] {
     const risks: string[] = [];
 
+    // Impermanent loss warning
+    risks.push('Impermanent loss risk from price divergence between assets');
+
+    // Liquidity risk
+    if (tvl < 1000000) {
+      risks.push('Low liquidity - high slippage risk for large trades');
+    }
+
+    // Volatile pair risk
+    if (otherTokenSymbol === 'STX' || otherTokenSymbol === 'ALEX') {
+      risks.push('Volatile trading pair - higher impermanent loss risk');
+    }
+
+    // Volume risk
+    if (volume24h < 100000) {
+      risks.push('Low trading volume - yields may be lower than projected');
+    }
+
+    // High APY warning
+    if (apy > 50) {
+      risks.push('High APY may not be sustainable - reward emissions could decrease');
+    }
+
     // ALEX token price risk
-    risks.push(
-      `Rewards paid in ALEX tokens - subject to price volatility (current: $${farm.rewardTokenPrice.toFixed(3)})`
-    );
+    risks.push('Rewards paid in ALEX tokens - subject to ALEX token price volatility');
 
-    // Lock period risk
-    if (farm.type === 'staking') {
-      risks.push('7-day lock period - funds not accessible during this time');
-    }
-
-    // LP risk
-    if (farm.type === 'lp_farming') {
-      risks.push('Impermanent loss risk from sBTC-ALEX pair price divergence');
-    }
-
-    // Low TVL risk
-    if (farm.totalStakedUsd < 3000000) {
-      risks.push('Relatively low TVL - limited liquidity');
-    }
-
-    // Boost requirement
-    if (farm.boostMultiplier > 1) {
-      risks.push(`Requires ${farm.boostRequirement} ALEX tokens for maximum boost`);
-    }
+    // Smart contract risk
+    risks.push('Smart contract risk - always DYOR and only invest what you can afford to lose');
 
     return risks;
   }

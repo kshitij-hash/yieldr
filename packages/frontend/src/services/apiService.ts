@@ -1,6 +1,11 @@
 // API Service for backend communication
 import axios, { AxiosInstance } from "axios";
-import { YieldOpportunity, Recommendation, UserPreferences } from "@/types";
+import {
+  YieldOpportunity,
+  Recommendation,
+  UserPreferences,
+  ApiResponse,
+} from "@/types";
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -10,6 +15,11 @@ const apiClient: AxiosInstance = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Store latest data source info globally
+let latestDataSource: { network: string; note?: string } | null = null;
+
+export const getLatestDataSource = () => latestDataSource;
 
 // Request interceptor
 apiClient.interceptors.request.use(
@@ -31,42 +41,43 @@ apiClient.interceptors.response.use(
   }
 );
 
-// API response type for yields endpoint
-interface YieldsApiResponse {
-  success: boolean;
-  data: {
-    protocols: Array<{
-      protocol: string;
-      opportunities: YieldOpportunity[];
-      totalTVL: number;
-      fetchedAt: number;
-      success: boolean;
-    }>;
-    totalOpportunities: number;
+// Aggregated yield data from backend
+interface AggregatedYieldData {
+  protocols: Array<{
+    protocol: string;
+    opportunities: YieldOpportunity[];
     totalTVL: number;
-    highestAPY?: {
-      protocol: string;
-      poolId: string;
-      apy: number;
-    };
-    lowestRisk?: {
-      protocol: string;
-      poolId: string;
-      tvl: number;
-    };
-    updatedAt: number;
-    stale: boolean;
+    fetchedAt: number;
+    success: boolean;
+    error?: string;
+  }>;
+  totalOpportunities: number;
+  totalTVL: number;
+  highestAPY?: {
+    protocol: string;
+    poolId: string;
+    apy: number;
   };
-  metadata: {
-    timestamp: number;
-    version: string;
+  lowestRisk?: {
+    protocol: string;
+    poolId: string;
+    tvl: number;
   };
+  updatedAt: number;
+  stale?: boolean;
 }
 
 // Get all yield opportunities
 export const getYields = async (): Promise<YieldOpportunity[]> => {
   try {
-    const response = await apiClient.get<YieldsApiResponse>("/api/yields");
+    const response = await apiClient.get<ApiResponse<AggregatedYieldData>>(
+      "/api/yields"
+    );
+
+    // Store data source info
+    if (response.data?.metadata?.dataSource) {
+      latestDataSource = response.data.metadata.dataSource;
+    }
 
     // Extract and flatten all opportunities from all protocols
     if (response.data?.data?.protocols) {
@@ -133,10 +144,15 @@ export const getRecommendation = async (
   preferences: UserPreferences
 ): Promise<Recommendation | null> => {
   try {
-    const response = await apiClient.post<{
-      success: boolean;
-      data: BackendRecommendation;
-    }>("/api/recommend", preferences);
+    const response = await apiClient.post<ApiResponse<BackendRecommendation>>(
+      "/api/recommend",
+      preferences
+    );
+
+    // Store data source info
+    if (response.data?.metadata?.dataSource) {
+      latestDataSource = response.data.metadata.dataSource;
+    }
 
     if (!response.data?.data) {
       return null;

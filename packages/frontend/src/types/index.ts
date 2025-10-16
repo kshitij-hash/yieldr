@@ -1,5 +1,33 @@
 // Type definitions for BitYield Frontend
 
+/**
+ * Backend API Response wrapper
+ */
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: ErrorResponse;
+  metadata: {
+    timestamp: number;
+    version: string;
+    dataSource?: {
+      network: string;
+      note?: string;
+    };
+  };
+}
+
+/**
+ * Error response from backend
+ */
+export interface ErrorResponse {
+  error: string;
+  message: string;
+  code?: string;
+  details?: unknown;
+  timestamp: number;
+}
+
 // Yield Opportunity from backend
 export interface YieldOpportunity {
   protocol: string;
@@ -12,7 +40,7 @@ export interface YieldOpportunity {
   poolId: string;
   poolName: string;
   apy: number;
-  apyBreakdown: {
+  apyBreakdown?: {
     base: number;
     rewards?: number;
     fees?: number;
@@ -21,17 +49,18 @@ export interface YieldOpportunity {
   tvlInSBTC: number;
   volume24h?: number;
   riskLevel: "low" | "medium" | "high";
-  riskFactors: string[];
-  minDeposit: number;
-  lockPeriod: number;
+  riskFactors?: string[];
+  minDeposit?: number;
+  maxDeposit?: number;
+  lockPeriod?: number;
   depositFee: number;
   withdrawalFee: number;
   performanceFee: number;
   impermanentLossRisk: boolean;
-  auditStatus: "audited" | "unaudited" | "in-progress";
-  protocolAge: number;
+  auditStatus?: "audited" | "unaudited" | "in_progress";
+  protocolAge?: number;
   contractAddress: string;
-  description: string;
+  description?: string;
   updatedAt: number;
 }
 
@@ -97,7 +126,6 @@ export interface Transaction {
 // Historical Yield Data for charts
 export interface HistoricalYield {
   date: string;
-  zest: number;
   velar: number;
   alex: number;
 }

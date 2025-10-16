@@ -11,11 +11,12 @@ import { getNetwork } from "./walletService";
 import { VaultBalance } from "@/types";
 
 // Contract details
+// NOTE: Contract name 'yielder' matches the name in Clarinet.toml
 const CONTRACT_ADDRESS =
   process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
   "STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ";
 const CONTRACT_NAME =
-  process.env.NEXT_PUBLIC_CONTRACT_NAME || "bityield-vault-updated";
+  process.env.NEXT_PUBLIC_CONTRACT_NAME || "yielder";
 
 // Read-only function: Get user balance
 export const getUserVaultBalance = async (

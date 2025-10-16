@@ -10,9 +10,9 @@ plan:
       transactions:
         - requirement-publish:
             contract-id: SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard
-            remap-sender: STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ
+            remap-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             remap-principals:
-              SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE: STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ
+              SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             cost: 8400
             path: "./.cache/requirements/SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.clar"
             clarity-version: 1
@@ -47,9 +47,9 @@ plan:
     - id: 2
       transactions:
         - contract-publish:
-            contract-name: bityield-vault-updated
-            expected-sender: STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ
-            cost: 91460
+            contract-name: yielder
+            expected-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            cost: 103520
             path: contracts/bityield-vault-updated.clar
             anchor-block-only: true
             clarity-version: 3

@@ -109,6 +109,8 @@ export class AIRecommender {
   private getSystemPrompt(): string {
     return `You are a Bitcoin DeFi expert specializing in sBTC yield optimization on the Stacks blockchain. Your role is to analyze yield opportunities and provide personalized, data-driven recommendations.
 
+CRITICAL: You MUST ONLY recommend from the opportunities provided in the user's message. DO NOT recommend any protocol, pool, or opportunity that is not explicitly listed in the AVAILABLE OPPORTUNITIES section. If a protocol has no opportunities listed, it means it's not available and you MUST NOT recommend it.
+
 Key principles:
 1. Prioritize capital preservation for conservative users
 2. Consider risk-adjusted returns, not just APY
@@ -116,14 +118,13 @@ Key principles:
 4. Prefer audited protocols with high TVL for safety
 5. Warn about unusually high APYs that may be unsustainable
 6. Consider user's deposit amount and time horizon
-7. Diversification is valuable for larger amounts
+7. Only recommend from the actual opportunities provided - do not hallucinate or invent pools
 
-Available protocols:
-- Zest: Bitcoin lending protocol, generally low-medium risk
+Protocol information (for context only - ONLY recommend pools that appear in the opportunities list):
 - Velar: DEX with liquidity pools, medium-high risk due to impermanent loss
 - ALEX: Yield farming and staking, variable risk based on farm type
 
-Analyze the provided yield opportunities and user preferences, then recommend the single best option with clear reasoning. Include 2-3 alternatives for comparison.`;
+Analyze the provided yield opportunities and user preferences, then recommend the single best option from the AVAILABLE OPPORTUNITIES with clear reasoning. Include 2-3 alternatives for comparison, also from the AVAILABLE OPPORTUNITIES only.`;
   }
 
   /**
@@ -155,6 +156,8 @@ Analyze the provided yield opportunities and user preferences, then recommend th
 
     return `Please analyze these sBTC yield opportunities and recommend the best option for my needs.
 
+CRITICAL CONSTRAINT: You MUST choose from the opportunities listed below. Do not recommend any pool, protocol, or opportunity that is not in this list.
+
 MY PROFILE:
 - Deposit Amount: ${depositAmountBTC.toFixed(4)} BTC (${userPreference.amount} sats)
 - Risk Tolerance: ${userPreference.riskTolerance}
@@ -164,7 +167,7 @@ ${userPreference.avoidImpermanentLoss ? '- Avoid Impermanent Loss: Yes' : ''}
 ${userPreference.maxLockPeriod !== undefined ? `- Max Lock Period: ${userPreference.maxLockPeriod} days` : ''}
 ${userPreference.preferredProtocols ? `- Preferred Protocols: ${userPreference.preferredProtocols.join(', ')}` : ''}
 
-AVAILABLE OPPORTUNITIES:
+AVAILABLE OPPORTUNITIES (${oppSummary.length} total):
 ${JSON.stringify(oppSummary, null, 2)}
 
 Please provide:

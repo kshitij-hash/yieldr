@@ -39,6 +39,15 @@ export const ProtocolCard: React.FC<ProtocolCardProps> = ({ opportunity }) => {
     }
   };
 
+  // Get protocol URL based on protocol name
+  const getProtocolUrl = (protocol: string): string => {
+    const urls: Record<string, string> = {
+      VELAR: "https://www.velar.co",
+      ALEX: "https://alexlab.co",
+    };
+    return urls[protocol.toUpperCase()] || "#";
+  };
+
   // Format large numbers
   const formatTvl = (value: number) => {
     if (value >= 1_000_000) {
@@ -108,7 +117,7 @@ export const ProtocolCard: React.FC<ProtocolCardProps> = ({ opportunity }) => {
               asChild
             >
               <a
-                href={`https://${opportunity.protocol.toLowerCase()}.xyz`}
+                href={getProtocolUrl(opportunity.protocol)}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -124,32 +133,37 @@ export const ProtocolCard: React.FC<ProtocolCardProps> = ({ opportunity }) => {
         <div className="space-y-2">
           <h4 className="text-sm font-semibold">Details</h4>
           <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Min Deposit:</span>
-              <span className="font-medium">
-                {formatTvl(opportunity.minDeposit)}
-              </span>
-            </div>
-            {opportunity.lockPeriod > 0 && (
+            {opportunity.minDeposit !== undefined && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Lock Period:</span>
+                <span className="text-muted-foreground">Min Deposit:</span>
                 <span className="font-medium">
-                  {opportunity.lockPeriod} days
+                  {formatTvl(opportunity.minDeposit)}
                 </span>
               </div>
             )}
+            {opportunity.lockPeriod !== undefined &&
+              opportunity.lockPeriod > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Lock Period:</span>
+                  <span className="font-medium">
+                    {opportunity.lockPeriod} days
+                  </span>
+                </div>
+              )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Impermanent Loss:</span>
               <span className="font-medium">
                 {opportunity.impermanentLossRisk ? "Possible" : "None"}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Audit Status:</span>
-              <span className="font-medium capitalize">
-                {opportunity.auditStatus}
-              </span>
-            </div>
+            {opportunity.auditStatus && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Audit Status:</span>
+                <span className="font-medium capitalize">
+                  {opportunity.auditStatus.replace("_", " ")}
+                </span>
+              </div>
+            )}
             {opportunity.performanceFee > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Performance Fee:</span>
@@ -158,7 +172,7 @@ export const ProtocolCard: React.FC<ProtocolCardProps> = ({ opportunity }) => {
                 </span>
               </div>
             )}
-            {opportunity.riskFactors.length > 0 && (
+            {opportunity.riskFactors && opportunity.riskFactors.length > 0 && (
               <div className="mt-2">
                 <span className="text-muted-foreground">Risk Factors:</span>
                 <ul className="mt-1 list-disc pl-4 text-xs">

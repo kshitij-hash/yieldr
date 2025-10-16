@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Github, Twitter, Bitcoin } from "lucide-react";
+import { Bitcoin } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
@@ -13,7 +13,7 @@ export const Footer: React.FC = () => {
   return (
     <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mt-auto">
       <div className="container mx-auto py-12 px-4 md:px-6">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           {/* About */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -38,19 +38,9 @@ export const Footer: React.FC = () => {
           {/* Quick Links */}
           <div>
             <h3 className="text-sm font-semibold mb-4 tracking-wider uppercase">
-              Quick Links
+              Resources
             </h3>
             <ul className="space-y-3">
-              <li>
-                <a
-                  href="#"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  GitHub
-                </a>
-              </li>
               <li>
                 <a
                   href="https://docs.stacks.co"
@@ -72,66 +62,6 @@ export const Footer: React.FC = () => {
                 </a>
               </li>
             </ul>
-          </div>
-
-          {/* Network Status */}
-          <div>
-            <h3 className="text-sm font-semibold mb-4 tracking-wider uppercase">
-              Network Status
-            </h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-muted-foreground">
-                  Stacks Network:{" "}
-                  <span className="text-foreground font-medium">Online</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-muted-foreground">
-                  sBTC Bridge:{" "}
-                  <span className="text-foreground font-medium">Active</span>
-                </span>
-              </div>
-              <div className="text-muted-foreground">
-                Latest Block:{" "}
-                <span className="text-foreground font-medium font-mono text-xs">
-                  Loading...
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Community */}
-          <div>
-            <h3 className="text-sm font-semibold mb-4 tracking-wider uppercase">
-              Community
-            </h3>
-            <div className="flex gap-3 mb-4">
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-lg bg-muted text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
-                aria-label="GitHub"
-              >
-                <Github className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 rounded-lg bg-muted text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
-                aria-label="Twitter"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Join our community for updates, support, and discussions about
-              Bitcoin DeFi.
-            </p>
           </div>
         </div>
 

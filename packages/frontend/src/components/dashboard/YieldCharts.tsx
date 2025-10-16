@@ -4,8 +4,6 @@ import React from "react";
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
@@ -14,7 +12,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import {
   Card,
@@ -41,20 +38,22 @@ export const YieldCharts: React.FC<YieldChartsProps> = ({ opportunities }) => {
     fill: getProtocolColor(opp.protocol),
   }));
 
-  // Prepare data for TVL pie chart
-  const tvlData = opportunities.map((opp) => ({
-    name: opp.protocol,
-    value: opp.tvl,
-  }));
-
-  // Mock historical data (in production, this would come from backend)
-  const historicalData = [
-    { date: "2024-10-01", zest: 10.5, velar: 8.2, alex: 12.1 },
-    { date: "2024-10-05", zest: 11.2, velar: 8.5, alex: 11.8 },
-    { date: "2024-10-10", zest: 12.0, velar: 9.1, alex: 12.5 },
-    { date: "2024-10-15", zest: 11.8, velar: 9.3, alex: 13.2 },
-    { date: "2024-10-20", zest: 12.5, velar: 9.8, alex: 12.9 },
-  ];
+  // Prepare data for TVL pie chart - only include protocols with TVL > 0
+  const tvlData = opportunities
+    .reduce((acc, opp) => {
+      // Find existing protocol entry
+      const existing = acc.find((item) => item.name === opp.protocol);
+      if (existing) {
+        existing.value += opp.tvl;
+      } else {
+        acc.push({
+          name: opp.protocol,
+          value: opp.tvl,
+        });
+      }
+      return acc;
+    }, [] as Array<{ name: string; value: number }>)
+    .filter((item) => item.value > 0); // Filter out zero-TVL protocols
 
   function getProtocolColor(protocol: string): string {
     const index = opportunities.findIndex((opp) => opp.protocol === protocol);
@@ -108,121 +107,82 @@ export const YieldCharts: React.FC<YieldChartsProps> = ({ opportunities }) => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="bar" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="bar">APY Comparison</TabsTrigger>
-            <TabsTrigger value="line">Historical Trends</TabsTrigger>
             <TabsTrigger value="pie">TVL Distribution</TabsTrigger>
           </TabsList>
 
           {/* APY Bar Chart */}
           <TabsContent value="bar" className="mt-6">
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={apyData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="name" className="text-sm" />
-                <YAxis
-                  label={{
-                    value: "APY (%)",
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                  className="text-sm"
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="apy" radius={[8, 8, 0, 0]}>
-                  {apyData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </TabsContent>
-
-          {/* Historical Line Chart */}
-          <TabsContent value="line" className="mt-6">
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={historicalData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="date" className="text-sm" />
-                <YAxis
-                  label={{
-                    value: "APY (%)",
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                  className="text-sm"
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="zest"
-                  stroke="#8884d8"
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="velar"
-                  stroke="#82ca9d"
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="alex"
-                  stroke="#ffc658"
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="w-full overflow-x-auto">
+              <ResponsiveContainer width="100%" height={350} minWidth={300}>
+                <BarChart data={apyData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" className="text-xs md:text-sm" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    label={{
+                      value: "APY (%)",
+                      angle: -90,
+                      position: "insideLeft",
+                      style: { fontSize: 12 }
+                    }}
+                    className="text-xs md:text-sm"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="apy" radius={[8, 8, 0, 0]}>
+                    {apyData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </TabsContent>
 
           {/* TVL Pie Chart */}
           <TabsContent value="pie" className="mt-6">
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={tvlData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
-                  }
-                  outerRadius={120}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {tvlData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0];
-                      return (
-                        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-                          <p className="font-semibold">{data.name}</p>
-                          <p className="text-sm">
-                            TVL: ${(data.value as number).toLocaleString()}
-                          </p>
-                        </div>
-                      );
+            <div className="w-full overflow-x-auto">
+              <ResponsiveContainer width="100%" height={350} minWidth={300}>
+                <PieChart>
+                  <Pie
+                    data={tvlData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
                     }
-                    return null;
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {tvlData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0];
+                        return (
+                          <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+                            <p className="font-semibold">{data.name}</p>
+                            <p className="text-sm">
+                              TVL: ${(data.value as number).toLocaleString()}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>

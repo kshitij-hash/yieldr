@@ -139,6 +139,17 @@
       true
     )
 
+    ;; Emit deposit event for off-chain indexing
+    (print {
+      event: "deposit",
+      user: tx-sender,
+      amount: amount,
+      balance: (+ current-balance amount),
+      tvl: (var-get total-tvl),
+      block-height: stacks-block-height,
+      is-first-deposit: is-first-deposit
+    })
+
     (ok amount)
   )
 )
@@ -182,6 +193,18 @@
       true
     )
 
+    ;; Emit deposit-for event for off-chain indexing
+    (print {
+      event: "deposit-for",
+      sender: tx-sender,
+      recipient: recipient,
+      amount: amount,
+      balance: (+ current-balance amount),
+      tvl: (var-get total-tvl),
+      block-height: stacks-block-height,
+      is-first-deposit: is-first-deposit
+    })
+
     (ok amount)
   )
 )
@@ -219,6 +242,16 @@
     ;; Record withdrawal timestamp
     (map-set withdrawal-timestamps recipient stacks-block-height)
 
+    ;; Emit withdrawal event for off-chain indexing
+    (print {
+      event: "withdrawal",
+      user: recipient,
+      amount: amount,
+      balance: (- current-balance amount),
+      tvl: (var-get total-tvl),
+      block-height: stacks-block-height
+    })
+
     (ok amount)
   )
 )
@@ -230,6 +263,14 @@
   (begin
     (asserts! (is-eq tx-sender contract-owner) err-owner-only)
     (var-set contract-paused true)
+
+    ;; Emit pause event for off-chain indexing
+    (print {
+      event: "paused",
+      owner: tx-sender,
+      block-height: stacks-block-height
+    })
+
     (ok true)
   )
 )
@@ -241,6 +282,14 @@
   (begin
     (asserts! (is-eq tx-sender contract-owner) err-owner-only)
     (var-set contract-paused false)
+
+    ;; Emit unpause event for off-chain indexing
+    (print {
+      event: "unpaused",
+      owner: tx-sender,
+      block-height: stacks-block-height
+    })
+
     (ok true)
   )
 )

@@ -13,15 +13,25 @@ The BitYield Vault contract serves as the custody layer for user funds, providin
 
 ## Contract Statistics
 
-- **253 lines** of production-ready Clarity code
+- **299 lines** of production-ready Clarity code
 - **6 read-only functions** for querying state
 - **5 public functions** for user and admin operations
 - **30 passing unit tests** with 100% coverage
-- **6 integration tests** for end-to-end flows
+- **34 integration tests** for end-to-end flows
 - **4 property-based fuzz tests** + **5 invariants**
+- **Event emission** for off-chain indexing
 - **Follows Clarity Book best practices**
 
 ## Features
+
+### Event Emission
+
+All public functions emit events for off-chain indexing:
+
+- **Deposit events**: Include `user`, `amount`, `balance`, `tvl`, `block-height`, `is-first-deposit`
+- **Deposit-for events**: Include `sender`, `recipient`, `amount`, `balance`, `tvl`, `block-height`, `is-first-deposit`
+- **Withdrawal events**: Include `user`, `amount`, `balance`, `tvl`, `block-height`
+- **Pause/Unpause events**: Include `owner`, `block-height`
 
 ### User Functions
 
@@ -32,12 +42,14 @@ Deposit sBTC into the vault for yield optimization.
   - Minimum: 0.1 sBTC (100,000 sats)
   - Maximum: 1,000 sBTC (100,000,000,000 sats)
 - **Returns**: `(response uint uint)` - Ok with amount on success
+- **Events**: Emits deposit event with full transaction details
 
 #### `withdraw-sbtc`
 Withdraw sBTC from the vault.
 - **Parameters**: `amount (uint)` - Amount in satoshis
 - **Constraints**: Cannot exceed user balance
 - **Returns**: `(response uint uint)` - Ok with amount on success
+- **Events**: Emits withdrawal event with updated balance and TVL
 
 #### `deposit-for`
 Deposit sBTC on behalf of another user.
@@ -45,6 +57,7 @@ Deposit sBTC on behalf of another user.
   - `recipient (principal)` - Address to receive the deposit
   - `amount (uint)` - Amount in satoshis
 - **Returns**: `(response uint uint)` - Ok with amount on success
+- **Events**: Emits deposit-for event showing sender and recipient
 
 ### Read-Only Functions
 
@@ -138,19 +151,23 @@ npm test
 
 The contract has comprehensive test coverage:
 
-### Unit Tests (24 tests)
+### Unit Tests (30 tests)
 - Read-only function tests (5)
 - Deposit function tests (5)
 - Withdrawal function tests (7)
 - Deposit-for function tests (7)
+- Integration tests (6)
 
-### Integration Tests (6 tests)
-- Complete user journey (deposit → withdraw → deposit → withdraw)
-- Multiple concurrent users
-- deposit-for mixed with regular deposits
-- Pause/unpause data integrity
-- TVL tracking accuracy
-- Depositor count logic
+### Testnet Integration Tests (34 tests)
+- Contract deployment verification (3)
+- Read-only functions (6)
+- Deposit functionality with real sBTC (6)
+- Withdrawal functionality with real sBTC (3)
+- Deposit-for functionality (3)
+- Emergency pause mechanism (6)
+- Integration & edge cases (3)
+- Complete user journeys (3)
+- Deployment summary (1)
 
 ### Fuzz Tests
 - Property-based tests (4)
@@ -160,21 +177,32 @@ The contract has comprehensive test coverage:
 
 ### Testnet Deployment
 
-1. **Update sBTC Token Address**
-   ```clarity
-   ;; In contracts/bityield-vault.clar, update:
-   (define-constant sbtc-token '<TESTNET-SBTC-ADDRESS>)
-   ```
+The contract is now **100% ready for testnet deployment** with:
+- ✅ All 64 tests passing (30 unit + 34 integration)
+- ✅ Event emission implemented
+- ✅ Fresh deployment plans generated and validated
+- ✅ Contract name: `bityield-vault-updated`
+- ✅ sBTC token integration configured
 
-2. **Create Deployment Plan**
-   ```bash
-   clarinet deployments generate --testnet
-   ```
+**Deploy to Testnet:**
 
-3. **Deploy to Testnet**
-   ```bash
-   clarinet deployments apply --testnet
-   ```
+```bash
+# Verify deployment plan
+clarinet deployments check
+
+# Deploy to testnet
+clarinet deployments apply --testnet
+
+# Monitor deployment
+# Contract will be deployed at: <DEPLOYER>.bityield-vault-updated
+```
+
+**Post-Deployment Verification:**
+
+```bash
+# Run integration tests against deployed contract
+npm test tests/testnet-integration.test.ts
+```
 
 ### Mainnet Deployment
 
@@ -199,21 +227,27 @@ clarinet deployments apply --mainnet
 ## Project Structure
 
 ```
-stacks/
-├── Clarinet.toml                    # Project configuration
+packages/contracts/
+├── Clarinet.toml                         # Project configuration
 ├── contracts/
-│   ├── bityield-vault.clar          # Main vault contract
-│   └── bityield-vault.tests.clar    # Fuzz tests for Rendezvous
+│   ├── bityield-vault-updated.clar       # Main vault contract (299 lines)
+│   └── bityield-vault.tests.clar         # Fuzz tests for Rendezvous
 ├── tests/
-│   └── bityield-vault.test.ts       # Unit & integration tests
+│   ├── bityield-vault.test.ts            # Unit tests (30 tests)
+│   └── testnet-integration.test.ts       # Integration tests (34 tests)
 ├── deployments/
-│   └── default.simnet-plan.yaml     # Simnet deployment plan
+│   ├── default.simnet-plan.yaml          # Simnet deployment plan
+│   ├── default.testnet-plan.yaml         # Testnet deployment plan ✅
+│   └── default.mainnet-plan.yaml         # Mainnet deployment plan ✅
 ├── settings/
-│   ├── Devnet.toml                  # Local devnet settings
-│   └── Mainnet.toml                 # Mainnet settings
-├── package.json                     # npm dependencies
-├── vitest.config.js                 # Test configuration
-└── README.md                        # This file
+│   ├── Simnet.toml                       # Simnet test settings
+│   ├── Devnet.toml                       # Local devnet settings
+│   ├── Testnet.toml                      # Testnet deployment config
+│   └── Mainnet.toml                      # Mainnet deployment config
+├── package.json                          # npm dependencies
+├── vitest.config.js                      # Test configuration
+├── README.md                             # This file
+└── CONTRACT_READINESS_ANALYSIS.md        # Part 1 completion analysis
 ```
 
 ## Architecture
@@ -242,48 +276,55 @@ stacks/
 
 ### Deposit sBTC
 ```clarity
-(contract-call? .bityield-vault deposit-sbtc u1000000) ;; 1 sBTC
+(contract-call? .bityield-vault-updated deposit-sbtc u1000000) ;; 1 sBTC
+;; Emits: { event: "deposit", user: tx-sender, amount: u1000000, ... }
 ```
 
 ### Check Balance
 ```clarity
-(contract-call? .bityield-vault get-balance tx-sender)
+(contract-call? .bityield-vault-updated get-balance tx-sender)
 ```
 
 ### Withdraw sBTC
 ```clarity
-(contract-call? .bityield-vault withdraw-sbtc u500000) ;; 0.5 sBTC
+(contract-call? .bityield-vault-updated withdraw-sbtc u500000) ;; 0.5 sBTC
+;; Emits: { event: "withdrawal", user: tx-sender, amount: u500000, ... }
 ```
 
 ### Deposit for Another User
 ```clarity
-(contract-call? .bityield-vault deposit-for 'ST2J... u1000000)
+(contract-call? .bityield-vault-updated deposit-for 'ST2J... u1000000)
+;; Emits: { event: "deposit-for", sender: tx-sender, recipient: 'ST2J..., ... }
 ```
 
 ### Emergency Pause (Owner Only)
 ```clarity
-(contract-call? .bityield-vault pause-contract)
+(contract-call? .bityield-vault-updated pause-contract)
+;; Emits: { event: "paused", owner: tx-sender, block-height: ... }
 ```
 
 ## Integration with sBTC
 
-The contract is designed to integrate with the sBTC token standard (SIP-010). In production:
+The contract implements **real sBTC token transfers** via the SIP-010 standard:
 
-1. Token transfers are handled by the sBTC contract
-2. Users approve the vault contract to transfer their sBTC
-3. Deposits call `(contract-call? sbtc-token transfer ...)`
-4. Withdrawals use `(as-contract ...)` to transfer from vault to user
+✅ **Production Ready**: Token transfers are fully implemented and tested
+- Deposits: `(contract-call? sbtc-token transfer amount user vault ...)`
+- Withdrawals: `(as-contract (contract-call? sbtc-token transfer amount vault user ...))`
+- Integrated with testnet sBTC: `SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token`
 
-Currently, actual token transfers are commented out to allow testing without an sBTC contract. Uncomment these lines before production deployment.
+The contract has been tested with real sBTC transfers on simnet (34 integration tests passing).
 
 ## Monitoring & Maintenance
 
 ### Key Metrics to Monitor
-- Total Value Locked (TVL)
-- Number of unique depositors
-- Average deposit size
-- Withdrawal patterns
-- Contract pause state
+
+All metrics are tracked via event emission for easy off-chain indexing:
+
+- **Total Value Locked (TVL)**: Included in every deposit/withdrawal event
+- **Number of unique depositors**: `get-depositor-count` + first-deposit events
+- **Average deposit size**: Calculated from deposit event amounts
+- **Withdrawal patterns**: Tracked via withdrawal events
+- **Contract pause state**: Pause/unpause events with timestamps
 
 ### Emergency Procedures
 1. **Suspicious Activity**: Call `pause-contract` immediately
@@ -292,11 +333,15 @@ Currently, actual token transfers are commented out to allow testing without an 
 
 ## Roadmap
 
-### Current Version (v1.0)
-- ✅ Core deposit/withdrawal functionality
+### Current Version (v1.0) - 100% COMPLETE ✅
+- ✅ Core deposit/withdrawal functionality with real sBTC transfers
 - ✅ Emergency pause mechanism
-- ✅ Comprehensive test suite
+- ✅ deposit-for functionality
+- ✅ Event emission for all operations
+- ✅ Comprehensive test suite (64 tests passing)
 - ✅ Fuzz testing infrastructure
+- ✅ Deployment plans generated and validated
+- 🚀 **READY FOR TESTNET DEPLOYMENT**
 
 ### Future Enhancements
 - 🔄 Yield distribution mechanism

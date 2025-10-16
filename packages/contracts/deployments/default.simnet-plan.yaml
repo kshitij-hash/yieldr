@@ -90,7 +90,7 @@ plan:
     - id: 2
       transactions:
         - emulated-contract-publish:
-            contract-name: bityield-vault-updated
+            contract-name: yielder
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/bityield-vault-updated.clar
             clarity-version: 3

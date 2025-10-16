@@ -44,25 +44,25 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-secondary/10 to-background p-8 md:p-12 animate-fade-in">
+      <div className="relative overflow-hidden rounded-xl md:rounded-2xl bg-gradient-to-br from-primary/10 via-secondary/10 to-background p-6 md:p-8 lg:p-12 animate-fade-in">
         <div className="absolute inset-0 bg-grid-white/[0.02] -z-10" />
-        <div className="space-y-4 relative z-10">
+        <div className="space-y-3 md:space-y-4 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 animate-scale-in">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">
+            <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-primary" />
+            <span className="text-xs md:text-sm font-medium text-primary">
               Bitcoin DeFi, Simplified by AI
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
             Welcome to yieldr
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-2xl">
             Maximize your sBTC returns with AI-powered yield optimization on
             Stacks blockchain
           </p>
           {!isConnected && (
-            <div className="pt-4">
-              <Button size="lg" className="gap-2" onClick={() => connect()}>
+            <div className="pt-2 md:pt-4">
+              <Button size="lg" className="gap-2 w-full sm:w-auto" onClick={() => connect()}>
                 Get Started
                 <Sparkles className="h-4 w-4" />
               </Button>
@@ -155,12 +155,12 @@ export default function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
               <div className="text-center space-y-3">
                 <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="text-2xl font-bold text-primary">1</span>
                 </div>
-                <h3 className="font-semibold">Connect Wallet</h3>
+                <h3 className="font-semibold text-base">Connect Wallet</h3>
                 <p className="text-sm text-muted-foreground">
                   Connect your Stacks wallet (Leather or Xverse) to get started
                 </p>
@@ -169,17 +169,17 @@ export default function HomePage() {
                 <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="text-2xl font-bold text-primary">2</span>
                 </div>
-                <h3 className="font-semibold">Get AI Recommendations</h3>
+                <h3 className="font-semibold text-base">Get AI Recommendations</h3>
                 <p className="text-sm text-muted-foreground">
                   Our AI analyzes your preferences and suggests optimal yield
                   strategies
                 </p>
               </div>
-              <div className="text-center space-y-3">
+              <div className="text-center space-y-3 sm:col-span-2 md:col-span-1">
                 <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="text-2xl font-bold text-primary">3</span>
                 </div>
-                <h3 className="font-semibold">Deposit & Earn</h3>
+                <h3 className="font-semibold text-base">Deposit & Earn</h3>
                 <p className="text-sm text-muted-foreground">
                   Deposit your sBTC and watch your yields grow automatically
                 </p>

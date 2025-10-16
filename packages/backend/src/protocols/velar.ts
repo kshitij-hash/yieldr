@@ -1,13 +1,55 @@
 import { createLogger } from '../config/logger.js';
 import { config } from '../config/env.js';
-import type { VelarLiquidityPool } from '../types/protocols.js';
 import { Protocol, ProtocolType, RiskLevel, type YieldOpportunity } from '../types/yield.js';
+import { priceOracle } from '../services/price-oracle.js';
 
 const logger = createLogger('velar-dex');
 
+// Velar API base URL
+const VELAR_API_BASE = 'https://api.velar.co';
+
+/**
+ * Velar API Pool Response
+ */
+interface VelarPoolResponse {
+  id: any;
+  symbol: string;
+  token0Symbol: string;
+  token0ContractAddress: string;
+  token1Symbol: string;
+  token1ContractAddress: string;
+  lpTokenContractAddress: string;
+  stats: {
+    apy: string;
+    totalSupply: number;
+    totalStaked: number;
+    reserve0: number;
+    reserve1: number;
+    volume_usd: {
+      value: number;
+    };
+    tvl_usd: {
+      value: number;
+      [key: string]: number;
+    };
+    fees_usd: {
+      value: number;
+    };
+  };
+}
+
+/**
+ * Velar API Response
+ */
+interface VelarAPIResponse {
+  skip: number;
+  limit: number;
+  data: VelarPoolResponse[];
+}
+
 /**
  * Velar DEX Integration
- * Fetches sBTC liquidity pool data from Velar DEX on Stacks
+ * Fetches sBTC liquidity pool data from Velar DEX API
  */
 export class VelarDEXIntegration {
   private contractAddress: string;
@@ -15,7 +57,7 @@ export class VelarDEXIntegration {
 
   constructor() {
     const contractId =
-      config.protocols.velar || 'SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1.velar-dex';
+      config.protocols.velar || 'SP1Y5YSTAHZ88XYK1VPDH24GY0HPX5J4JECTMY4A1.univ2-core';
     const [address, name] = contractId.split('.');
     this.contractAddress = address;
     this.contractName = name;
@@ -23,30 +65,30 @@ export class VelarDEXIntegration {
     logger.info('Velar DEX integration initialized', {
       contractAddress: this.contractAddress,
       contractName: this.contractName,
+      apiBase: VELAR_API_BASE,
     });
   }
 
   /**
-   * Fetch all sBTC liquidity pools from Velar
+   * Fetch all sBTC liquidity pools from Velar API
    */
   async fetchYieldOpportunities(): Promise<YieldOpportunity[]> {
     try {
-      logger.info('Fetching Velar liquidity pools');
+      logger.info('Fetching Velar liquidity pools from API');
 
-      // Get sBTC pool pairs
-      const poolPairs = await this.getSBTCPoolPairs();
+      // Fetch sBTC-related pools
+      const pools = await this.fetchSBTCPools();
 
       const opportunities: YieldOpportunity[] = [];
 
-      for (const pair of poolPairs) {
+      for (const poolData of pools) {
         try {
-          const poolData = await this.fetchPoolData(pair);
-          if (poolData) {
-            const opportunity = this.transformToYieldOpportunity(poolData);
+          const opportunity = await this.transformToYieldOpportunity(poolData);
+          if (opportunity) {
             opportunities.push(opportunity);
           }
         } catch (error) {
-          logger.error(`Failed to fetch pool ${pair.poolId}`, {
+          logger.error(`Failed to process pool ${poolData.id}`, {
             error: error instanceof Error ? error.message : String(error),
           });
         }
@@ -63,128 +105,175 @@ export class VelarDEXIntegration {
   }
 
   /**
-   * Get sBTC pool pairs
+   * Fetch sBTC pools from Velar API
    */
-  private async getSBTCPoolPairs(): Promise<
-    Array<{ poolId: string; token0: string; token1: string }>
-  > {
+  private async fetchSBTCPools(): Promise<VelarPoolResponse[]> {
     try {
-      // Mock pool pairs - in production, query from contract
-      return [
-        { poolId: 'sbtc-stx-pool', token0: 'sBTC', token1: 'STX' },
-        { poolId: 'sbtc-usda-pool', token0: 'sBTC', token1: 'USDA' },
-      ];
+      const allPools = await this.fetchAllPools();
+
+      // Filter for sBTC-related pools
+      // Check both token symbols and contract addresses
+      const sbtcPools = allPools.filter(pool => {
+        const token0Lower = pool.token0ContractAddress.toLowerCase();
+        const token1Lower = pool.token1ContractAddress.toLowerCase();
+        const symbol0Lower = pool.token0Symbol.toLowerCase();
+        const symbol1Lower = pool.token1Symbol.toLowerCase();
+
+        return (
+          token0Lower.includes('sbtc') ||
+          token1Lower.includes('sbtc') ||
+          symbol0Lower.includes('sbtc') ||
+          symbol1Lower.includes('sbtc') ||
+          token0Lower.includes('wsbtc') ||
+          token1Lower.includes('wsbtc')
+        );
+      });
+
+      logger.info(`Found ${sbtcPools.length} sBTC pools on Velar`, {
+        pools: sbtcPools.map(p => p.symbol),
+      });
+
+      return sbtcPools;
     } catch (error) {
-      logger.warn('Using fallback pool pairs');
-      return [{ poolId: 'sbtc-stx-pool', token0: 'sBTC', token1: 'STX' }];
+      logger.error('Failed to fetch sBTC pools', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return [];
     }
   }
 
   /**
-   * Fetch individual pool data
+   * Fetch all pools from Velar API
    */
-  private async fetchPoolData(pair: {
-    poolId: string;
-    token0: string;
-    token1: string;
-  }): Promise<VelarLiquidityPool | null> {
-    try {
-      const [reserves, volume, fees, rewardApy] = await Promise.all([
-        this.getPoolReserves(pair.poolId),
-        this.getPoolVolume(pair.poolId),
-        this.getPoolFees(pair.poolId),
-        this.getRewardAPY(pair.poolId),
-      ]);
+  private async fetchAllPools(): Promise<VelarPoolResponse[]> {
+    const url = `${VELAR_API_BASE}/pools`;
 
-      const tradingFeeApy = this.calculateTradingFeeAPY(fees.fees24h, reserves.totalLiquidity);
+    try {
+      logger.debug('Fetching all pools from Velar API');
+
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const apiResponse = (await response.json()) as VelarAPIResponse;
+      const pools = apiResponse.data || [];
+
+      logger.debug('Fetched all pools', { count: pools.length });
+
+      return pools;
+    } catch (error) {
+      logger.error('Failed to fetch all pools', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return [];
+    }
+  }
+
+  /**
+   * Transform Velar pool data to standardized YieldOpportunity
+   */
+  private async transformToYieldOpportunity(
+    pool: VelarPoolResponse
+  ): Promise<YieldOpportunity | null> {
+    try {
+      // Get BTC price for calculations
+      const btcPrice = await priceOracle.getBitcoinPrice();
+
+      // Extract stats
+      const { stats } = pool;
+
+      // Get TVL from API (already in USD)
+      const tvl = stats.tvl_usd.value;
+
+      // Calculate sBTC reserve from TVL breakdown (most accurate)
+      // The TVL breakdown gives us the USD value of each token
+      let sbtcValueUSD = 0;
+      const sbtcContract = pool.token0ContractAddress.toLowerCase().includes('sbtc')
+        ? pool.token0ContractAddress
+        : pool.token1ContractAddress;
+
+      // Get sBTC value from TVL breakdown
+      if (stats.tvl_usd[sbtcContract]) {
+        sbtcValueUSD = stats.tvl_usd[sbtcContract];
+      } else {
+        // Fallback: assume balanced pool
+        sbtcValueUSD = tvl / 2;
+      }
+
+      // Convert USD value to BTC amount
+      const sbtcReserve = sbtcValueUSD / btcPrice;
+
+      // Get volume and fees from API (already in USD)
+      const volume24h = stats.volume_usd.value;
+      const fees24h = stats.fees_usd.value;
+
+      // Calculate trading fee APY
+      const tradingFeeApy = this.calculateTradingFeeAPY(fees24h, tvl);
+
+      // Parse or estimate reward APY
+      const rewardApy =
+        stats.apy !== '--' ? parseFloat(stats.apy) : this.estimateRewardAPY(tvl);
+
+      // Total APY
       const totalApy = tradingFeeApy + rewardApy;
 
+      // Get token symbols
+      const token0Symbol = pool.token0Symbol;
+      const token1Symbol = pool.token1Symbol;
+
+      // Calculate risk level
+      const riskLevel = this.calculateRiskLevel(tvl, token1Symbol, volume24h);
+
+      // Pool name
+      const poolName = `${token0Symbol}-${token1Symbol} LP`;
+
       return {
-        poolId: pair.poolId,
-        poolName: `${pair.token0}-${pair.token1} LP`,
+        protocol: Protocol.VELAR,
+        protocolType: ProtocolType.LIQUIDITY_POOL,
+        poolId: pool.lpTokenContractAddress || pool.symbol,
+        poolName,
+
+        apy: totalApy,
+        apyBreakdown: {
+          base: tradingFeeApy,
+          rewards: rewardApy,
+          fees: tradingFeeApy,
+        },
+
+        tvl,
+        tvlInSBTC: sbtcReserve,
+        volume24h,
+
+        riskLevel,
+        riskFactors: this.identifyRiskFactors(tvl, token1Symbol, volume24h, totalApy),
+
+        minDeposit: 5000000, // 0.05 sBTC in sats
+        lockPeriod: 0, // No lock for LP
+
+        depositFee: 0,
+        withdrawalFee: 0.1, // Typical 0.1% withdrawal fee
+        performanceFee: 0, // No performance fee for DEX
+
+        impermanentLossRisk: true, // LP positions have IL risk
+        auditStatus: 'audited',
+        protocolAge: 240, // ~8 months (launched ~March 2024)
+
         contractAddress: `${this.contractAddress}.${this.contractName}`,
-        token0: pair.token0,
-        token1: pair.token1,
-        reserve0: reserves.reserve0,
-        reserve1: reserves.reserve1,
-        totalLiquidity: reserves.totalLiquidity,
-        volume24h: volume.volume24h,
-        volumeWeek: volume.volumeWeek,
-        fees24h: fees.fees24h,
-        tradingFeeApy,
-        rewardApy,
-        totalApy,
-        impermanentLoss24h: this.estimateImpermanentLoss(reserves.reserve0, reserves.reserve1),
-        priceImpact: 0.5, // Mock: 0.5% for typical trade
+        description: `Provide ${poolName} liquidity on Velar to earn ${totalApy.toFixed(2)}% APY from trading fees (${tradingFeeApy.toFixed(2)}%) and VELAR rewards (${rewardApy.toFixed(2)}%). Warning: Subject to impermanent loss.`,
+        updatedAt: Date.now(),
       };
     } catch (error) {
-      logger.error(`Failed to fetch pool data for ${pair.poolId}`);
+      logger.error('Failed to transform pool data', {
+        poolSymbol: pool.symbol,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return null;
-    }
-  }
-
-  /**
-   * Get pool reserves
-   */
-  private async getPoolReserves(
-    poolId: string
-  ): Promise<{ reserve0: number; reserve1: number; totalLiquidity: number }> {
-    try {
-      // Mock implementation - in production, query contract
-      const btcPrice = 100000;
-      const reserve0 = 25 + Math.random() * 75; // 25-100 sBTC
-      const reserve1 = reserve0 * btcPrice * (poolId.includes('stx') ? 30 : 1); // STX or stablecoin
-      const totalLiquidity = reserve0 * btcPrice * 2; // Both sides
-
-      return { reserve0, reserve1, totalLiquidity };
-    } catch (error) {
-      logger.error(`Failed to get reserves for ${poolId}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Get pool volume metrics
-   */
-  private async getPoolVolume(poolId: string): Promise<{ volume24h: number; volumeWeek: number }> {
-    try {
-      // Mock implementation
-      const volume24h = 500000 + Math.random() * 1500000; // $500k - $2M daily
-      const volumeWeek = volume24h * 7 * (0.8 + Math.random() * 0.4); // Some variance
-
-      return { volume24h, volumeWeek };
-    } catch (error) {
-      logger.error(`Failed to get volume for ${poolId}`);
-      return { volume24h: 0, volumeWeek: 0 };
-    }
-  }
-
-  /**
-   * Get pool fees
-   */
-  private async getPoolFees(poolId: string): Promise<{ fees24h: number }> {
-    try {
-      // Velar typically charges 0.3% trading fee
-      const volume = await this.getPoolVolume(poolId);
-      const fees24h = volume.volume24h * 0.003; // 0.3% fee
-
-      return { fees24h };
-    } catch (error) {
-      logger.error(`Failed to get fees for ${poolId}`);
-      return { fees24h: 0 };
-    }
-  }
-
-  /**
-   * Get VELAR token reward APY
-   */
-  private async getRewardAPY(poolId: string): Promise<number> {
-    try {
-      // Mock implementation - in production, calculate from reward rate
-      return 10 + Math.random() * 15; // 10-25% APY in VELAR tokens
-    } catch (error) {
-      logger.error(`Failed to get reward APY for ${poolId}`);
-      return 0;
     }
   }
 
@@ -198,72 +287,42 @@ export class VelarDEXIntegration {
   }
 
   /**
-   * Estimate impermanent loss based on price movement
+   * Estimate reward APY based on TVL
    */
-  private estimateImpermanentLoss(_reserve0: number, _reserve1: number): number {
-    // Simplified IL calculation - in production, use historical price data
-    // Assuming 5-10% price divergence
-    return 2 + Math.random() * 3; // 2-5% IL estimate
-  }
-
-  /**
-   * Transform Velar pool data to standardized YieldOpportunity
-   */
-  private transformToYieldOpportunity(pool: VelarLiquidityPool): YieldOpportunity {
-    const riskLevel = this.calculateRiskLevel(pool);
-
-    return {
-      protocol: Protocol.VELAR,
-      protocolType: ProtocolType.LIQUIDITY_POOL,
-      poolId: pool.poolId,
-      poolName: pool.poolName,
-
-      apy: pool.totalApy,
-      apyBreakdown: {
-        base: pool.tradingFeeApy,
-        rewards: pool.rewardApy,
-        fees: pool.tradingFeeApy,
-      },
-
-      tvl: pool.totalLiquidity,
-      tvlInSBTC: pool.reserve0,
-      volume24h: pool.volume24h,
-
-      riskLevel,
-      riskFactors: this.identifyRiskFactors(pool),
-
-      minDeposit: 5000000, // 0.05 sBTC in sats
-      lockPeriod: 0, // No lock for LP
-
-      depositFee: 0,
-      withdrawalFee: 0.1, // Typical 0.1% withdrawal fee
-      performanceFee: 0, // No performance fee for DEX
-
-      impermanentLossRisk: true, // LP positions have IL risk
-      auditStatus: 'audited',
-      protocolAge: 240, // Mock: 8 months old
-
-      contractAddress: pool.contractAddress,
-      description: `Provide ${pool.token0}-${pool.token1} liquidity to earn ${pool.totalApy.toFixed(2)}% APY from trading fees (${pool.tradingFeeApy.toFixed(2)}%) and VELAR rewards (${pool.rewardApy.toFixed(2)}%). Warning: Subject to impermanent loss.`,
-      updatedAt: Date.now(),
-    };
+  private estimateRewardAPY(tvl: number): number {
+    // Velar provides VELAR token rewards
+    // Higher TVL pools typically have lower reward APY
+    if (tvl > 10000000) return 8; // > $10M
+    if (tvl > 5000000) return 12; // > $5M
+    if (tvl > 2000000) return 18; // > $2M
+    return 25; // Small pools get higher rewards
   }
 
   /**
    * Calculate risk level
    */
-  private calculateRiskLevel(pool: VelarLiquidityPool): RiskLevel {
+  private calculateRiskLevel(
+    tvl: number,
+    token1Symbol: string,
+    volume24h: number
+  ): RiskLevel {
     // Volatile pairs = higher risk
-    if (pool.token1 === 'STX' || pool.token1 === 'ALEX') {
+    if (token1Symbol === 'STX' || token1Symbol === 'ALEX') {
       return RiskLevel.HIGH;
     }
 
     // Low liquidity = higher risk
-    if (pool.totalLiquidity < 2000000) return RiskLevel.HIGH; // < $2M
-    if (pool.totalLiquidity < 5000000) return RiskLevel.MEDIUM; // < $5M
+    if (tvl < 1000000) return RiskLevel.HIGH; // < $1M
+    if (tvl < 3000000) return RiskLevel.MEDIUM; // < $3M
+
+    // Low volume = higher risk
+    if (volume24h < 50000 && tvl > 0) {
+      const turnover = volume24h / tvl;
+      if (turnover < 0.01) return RiskLevel.MEDIUM; // < 1% daily turnover
+    }
 
     // Stablecoin pairs = lower risk
-    if (pool.token1 === 'USDA' || pool.token1 === 'USDC') {
+    if (token1Symbol === 'USDA' || token1Symbol === 'USDC') {
       return RiskLevel.MEDIUM; // Still have some IL risk
     }
 
@@ -273,26 +332,39 @@ export class VelarDEXIntegration {
   /**
    * Identify risk factors
    */
-  private identifyRiskFactors(pool: VelarLiquidityPool): string[] {
+  private identifyRiskFactors(
+    tvl: number,
+    token1Symbol: string,
+    volume24h: number,
+    apy: number
+  ): string[] {
     const risks: string[] = [];
 
     // Impermanent loss warning
-    risks.push(`Impermanent loss risk: estimated ${pool.impermanentLoss24h.toFixed(2)}% (24h)`);
+    risks.push('Impermanent loss risk from price divergence between assets');
 
     // Liquidity risk
-    if (pool.totalLiquidity < 2000000) {
-      risks.push('Low liquidity - high slippage risk');
+    if (tvl < 1000000) {
+      risks.push('Low liquidity - high slippage risk for large trades');
     }
 
     // Volatile pair risk
-    if (pool.token1 === 'STX') {
-      risks.push('Volatile trading pair - higher IL risk');
+    if (token1Symbol === 'STX' || token1Symbol === 'ALEX') {
+      risks.push('Volatile trading pair - higher impermanent loss risk');
     }
 
     // Volume risk
-    if (pool.volume24h < 100000) {
-      risks.push('Low trading volume - may affect yields');
+    if (volume24h < 100000) {
+      risks.push('Low trading volume - yields may be lower than projected');
     }
+
+    // High APY warning
+    if (apy > 50) {
+      risks.push('High APY may not be sustainable - reward emissions could decrease');
+    }
+
+    // Smart contract risk
+    risks.push('Smart contract risk - always DYOR and only invest what you can afford to lose');
 
     return risks;
   }

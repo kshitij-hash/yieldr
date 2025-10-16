@@ -15,11 +15,42 @@ import {
   type ErrorResponse,
 } from './types/yield.js';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
 const serverLogger = createLogger('server');
 
 // Initialize Express app
 const app = express();
+
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: config.server.rateWindowMs, // Time window from config
+  max: config.server.rateLimit, // Max requests per window from config
+  message: {
+    success: false,
+    error: {
+      error: 'Too Many Requests',
+      message: 'Too many requests from this IP, please try again later',
+      timestamp: Date.now(),
+    },
+  },
+  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
+  legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  handler: (req, res) => {
+    serverLogger.warn('Rate limit exceeded', {
+      ip: req.ip,
+      path: req.path,
+    });
+    res.status(429).json({
+      success: false,
+      error: {
+        error: 'Too Many Requests',
+        message: 'Too many requests from this IP, please try again later',
+        timestamp: Date.now(),
+      },
+    });
+  },
+});
 
 // Middleware
 app.use(
@@ -31,6 +62,9 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Apply rate limiting to all API routes
+app.use('/api/', limiter);
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -58,6 +92,12 @@ function createResponse<T>(data?: T, error?: ErrorResponse): ApiResponse<T> {
     metadata: {
       timestamp: Date.now(),
       version: '1.0.0',
+      dataSource: {
+        network: config.stacks.network,
+        note: config.stacks.network === 'mainnet'
+          ? 'Yield data from mainnet protocols. User deposits go to testnet vault.'
+          : undefined,
+      },
     },
   };
 }
@@ -235,7 +275,6 @@ app.get('/api/health', async (_req: Request, res: Response) => {
         model: aiHealth.model,
       },
       protocols: {
-        zest: hiroHealth.status === 'up' ? 'up' : 'down',
         velar: hiroHealth.status === 'up' ? 'up' : 'down',
         alex: hiroHealth.status === 'up' ? 'up' : 'down',
       },

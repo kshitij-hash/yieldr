@@ -23,7 +23,6 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   // Protocol Contract Addresses
-  ZEST_PROTOCOL_CONTRACT: z.string().optional(),
   VELAR_DEX_CONTRACT: z.string().optional(),
   ALEX_PROTOCOL_CONTRACT: z.string().optional(),
 
@@ -107,7 +106,6 @@ export const config = {
     rateWindowMs: env.API_RATE_WINDOW_MS,
   },
   protocols: {
-    zest: env.ZEST_PROTOCOL_CONTRACT,
     velar: env.VELAR_DEX_CONTRACT,
     alex: env.ALEX_PROTOCOL_CONTRACT,
   },

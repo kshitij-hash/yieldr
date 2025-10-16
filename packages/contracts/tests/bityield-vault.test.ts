@@ -18,7 +18,7 @@ describe("BitYield Vault Contract", () => {
 
     it("get-balance returns u0 for address that never deposited", () => {
       const result = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet1)],
         deployer
@@ -28,7 +28,7 @@ describe("BitYield Vault Contract", () => {
 
     it("get-total-tvl returns u0 initially", () => {
       const result = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-total-tvl",
         [],
         deployer
@@ -38,7 +38,7 @@ describe("BitYield Vault Contract", () => {
 
     it("get-deposit-timestamp returns u0 for address that never deposited", () => {
       const result = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-deposit-timestamp",
         [Cl.principal(wallet1)],
         deployer
@@ -48,7 +48,7 @@ describe("BitYield Vault Contract", () => {
 
     it("is-paused returns false initially", () => {
       const result = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "is-paused",
         [],
         deployer
@@ -58,7 +58,7 @@ describe("BitYield Vault Contract", () => {
 
     it("get-depositor-count returns u0 initially", () => {
       const result = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-depositor-count",
         [],
         deployer
@@ -76,7 +76,7 @@ describe("BitYield Vault Contract", () => {
 
     it("rejects zero amount deposit", () => {
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(0)],
         wallet1
@@ -86,7 +86,7 @@ describe("BitYield Vault Contract", () => {
 
     it("rejects deposit below minimum", () => {
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(50000)], // Below min-deposit of 100000
         wallet1
@@ -96,7 +96,7 @@ describe("BitYield Vault Contract", () => {
 
     it("rejects deposit above maximum", () => {
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(200000000000)], // Above max-deposit of 100000000000
         wallet1
@@ -107,7 +107,7 @@ describe("BitYield Vault Contract", () => {
     it("rejects deposit when contract is paused", () => {
       // First pause the contract
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "pause-contract",
         [],
         deployer
@@ -115,7 +115,7 @@ describe("BitYield Vault Contract", () => {
 
       // Then try to deposit
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet1
@@ -124,7 +124,7 @@ describe("BitYield Vault Contract", () => {
 
       // Unpause for subsequent tests
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "unpause-contract",
         [],
         deployer
@@ -137,7 +137,7 @@ describe("BitYield Vault Contract", () => {
     it("accepts valid deposit amount (validation only)", () => {
       const amount = 1000000; // 1 sBTC
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(amount)],
         wallet1
@@ -162,7 +162,7 @@ describe("BitYield Vault Contract", () => {
 
     it("rejects withdrawal when no balance exists", () => {
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(100000)],
         wallet1
@@ -173,7 +173,7 @@ describe("BitYield Vault Contract", () => {
     it("rejects withdrawal exceeding balance", () => {
       // First deposit
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet1
@@ -181,7 +181,7 @@ describe("BitYield Vault Contract", () => {
 
       // Try to withdraw more than deposited
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(2000000)],
         wallet1
@@ -192,7 +192,7 @@ describe("BitYield Vault Contract", () => {
     it("rejects zero amount withdrawal", () => {
       // First deposit
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet1
@@ -200,7 +200,7 @@ describe("BitYield Vault Contract", () => {
 
       // Try to withdraw zero
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(0)],
         wallet1
@@ -211,7 +211,7 @@ describe("BitYield Vault Contract", () => {
     it("rejects withdrawal when contract is paused", () => {
       // First deposit
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet1
@@ -219,7 +219,7 @@ describe("BitYield Vault Contract", () => {
 
       // Pause contract
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "pause-contract",
         [],
         deployer
@@ -227,7 +227,7 @@ describe("BitYield Vault Contract", () => {
 
       // Try to withdraw
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(500000)],
         wallet1
@@ -236,7 +236,7 @@ describe("BitYield Vault Contract", () => {
 
       // Unpause for subsequent tests
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "unpause-contract",
         [],
         deployer
@@ -249,7 +249,7 @@ describe("BitYield Vault Contract", () => {
 
       // Deposit
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(depositAmount)],
         wallet2
@@ -257,7 +257,7 @@ describe("BitYield Vault Contract", () => {
 
       // Withdraw partial amount
       const withdrawResult = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(withdrawAmount)],
         wallet2
@@ -266,7 +266,7 @@ describe("BitYield Vault Contract", () => {
 
       // Check updated balance
       const balanceResult = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet2)],
         deployer
@@ -275,7 +275,7 @@ describe("BitYield Vault Contract", () => {
 
       // Check TVL decreased
       const tvlResult = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-total-tvl",
         [],
         deployer
@@ -289,7 +289,7 @@ describe("BitYield Vault Contract", () => {
 
       // Deposit
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(depositAmount)],
         wallet3
@@ -297,7 +297,7 @@ describe("BitYield Vault Contract", () => {
 
       // Withdraw full amount
       const withdrawResult = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(depositAmount)],
         wallet3
@@ -306,7 +306,7 @@ describe("BitYield Vault Contract", () => {
 
       // Check balance is zero
       const balanceResult = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet3)],
         deployer
@@ -319,7 +319,7 @@ describe("BitYield Vault Contract", () => {
 
       // Deposit
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(depositAmount)],
         wallet1
@@ -330,7 +330,7 @@ describe("BitYield Vault Contract", () => {
 
       // Withdraw
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(depositAmount)],
         wallet1
@@ -338,7 +338,7 @@ describe("BitYield Vault Contract", () => {
 
       // Check withdrawal timestamp was recorded
       const timestampResult = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-withdrawal-timestamp",
         [Cl.principal(wallet1)],
         deployer
@@ -361,7 +361,7 @@ describe("BitYield Vault Contract", () => {
 
       // wallet1 deposits for wallet2
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet2), Cl.uint(depositAmount)],
         wallet1
@@ -370,7 +370,7 @@ describe("BitYield Vault Contract", () => {
 
       // Check wallet2's balance increased (not wallet1)
       const wallet2Balance = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet2)],
         deployer
@@ -379,7 +379,7 @@ describe("BitYield Vault Contract", () => {
 
       // Check wallet1's balance didn't change
       const wallet1Balance = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet1)],
         deployer
@@ -389,7 +389,7 @@ describe("BitYield Vault Contract", () => {
 
     it("rejects deposit-for with zero amount", () => {
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet3), Cl.uint(0)],
         wallet1
@@ -399,7 +399,7 @@ describe("BitYield Vault Contract", () => {
 
     it("rejects deposit-for below minimum", () => {
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet3), Cl.uint(50000)], // Below 100000 minimum
         wallet1
@@ -409,7 +409,7 @@ describe("BitYield Vault Contract", () => {
 
     it("rejects deposit-for above maximum", () => {
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet3), Cl.uint(200000000000)], // Above max
         wallet1
@@ -420,7 +420,7 @@ describe("BitYield Vault Contract", () => {
     it("rejects deposit-for when contract is paused", () => {
       // Pause contract
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "pause-contract",
         [],
         deployer
@@ -428,7 +428,7 @@ describe("BitYield Vault Contract", () => {
 
       // Try deposit-for
       const result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet3), Cl.uint(500000)],
         wallet1
@@ -437,7 +437,7 @@ describe("BitYield Vault Contract", () => {
 
       // Unpause
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "unpause-contract",
         [],
         deployer
@@ -446,7 +446,7 @@ describe("BitYield Vault Contract", () => {
 
     it("increments depositor count for first deposit-for", () => {
       const initialCount = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-depositor-count",
         [],
         deployer
@@ -455,14 +455,14 @@ describe("BitYield Vault Contract", () => {
 
       // wallet1 deposits for a fresh wallet (wallet3)
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet3), Cl.uint(500000)],
         wallet1
       );
 
       const newCount = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-depositor-count",
         [],
         deployer
@@ -477,7 +477,7 @@ describe("BitYield Vault Contract", () => {
 
       // wallet1 deposits for wallet3
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet3), Cl.uint(600000)],
         wallet1
@@ -485,7 +485,7 @@ describe("BitYield Vault Contract", () => {
 
       // Check wallet3's deposit timestamp
       const timestamp = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-deposit-timestamp",
         [Cl.principal(wallet3)],
         deployer
@@ -508,7 +508,7 @@ describe("BitYield Vault Contract", () => {
       // Step 1: Initial deposit
       const deposit1 = 2000000;
       let result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(deposit1)],
         user
@@ -517,7 +517,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify balance
       let balance = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(user)],
         deployer
@@ -527,7 +527,7 @@ describe("BitYield Vault Contract", () => {
       // Step 2: Partial withdrawal
       const withdraw1 = 500000;
       result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(withdraw1)],
         user
@@ -536,7 +536,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify balance decreased
       balance = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(user)],
         deployer
@@ -546,7 +546,7 @@ describe("BitYield Vault Contract", () => {
       // Step 3: Second deposit
       const deposit2 = 1000000;
       result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(deposit2)],
         user
@@ -555,7 +555,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify cumulative balance
       balance = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(user)],
         deployer
@@ -565,7 +565,7 @@ describe("BitYield Vault Contract", () => {
       // Step 4: Full withdrawal
       const finalBalance = deposit1 - withdraw1 + deposit2;
       result = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(finalBalance)],
         user
@@ -574,7 +574,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify balance is zero
       balance = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(user)],
         deployer
@@ -585,7 +585,7 @@ describe("BitYield Vault Contract", () => {
     it("multiple users with concurrent operations maintain correct balances", () => {
       // User 1 deposits
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet1
@@ -593,7 +593,7 @@ describe("BitYield Vault Contract", () => {
 
       // User 2 deposits
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(2000000)],
         wallet2
@@ -601,7 +601,7 @@ describe("BitYield Vault Contract", () => {
 
       // User 3 deposits
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(3000000)],
         wallet3
@@ -609,7 +609,7 @@ describe("BitYield Vault Contract", () => {
 
       // User 1 withdraws half
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(500000)],
         wallet1
@@ -617,7 +617,7 @@ describe("BitYield Vault Contract", () => {
 
       // User 2 deposits more
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet2
@@ -625,7 +625,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify each user's balance is independent
       const balance1 = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet1)],
         deployer
@@ -633,7 +633,7 @@ describe("BitYield Vault Contract", () => {
       expect(balance1.result).toBeUint(500000);
 
       const balance2 = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet2)],
         deployer
@@ -641,7 +641,7 @@ describe("BitYield Vault Contract", () => {
       expect(balance2.result).toBeUint(3000000);
 
       const balance3 = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet3)],
         deployer
@@ -650,7 +650,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify TVL is sum of all balances
       const tvl = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-total-tvl",
         [],
         deployer
@@ -661,7 +661,7 @@ describe("BitYield Vault Contract", () => {
     it("deposit-for and regular deposit maintain correct balances", () => {
       // User 1 deposits for themselves
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet1
@@ -669,7 +669,7 @@ describe("BitYield Vault Contract", () => {
 
       // User 2 deposits for User 3
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet3), Cl.uint(2000000)],
         wallet2
@@ -677,7 +677,7 @@ describe("BitYield Vault Contract", () => {
 
       // User 1 deposits for User 3 again
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet3), Cl.uint(500000)],
         wallet1
@@ -685,7 +685,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify balances
       const balance1 = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet1)],
         deployer
@@ -693,7 +693,7 @@ describe("BitYield Vault Contract", () => {
       expect(balance1.result).toBeUint(1000000); // Only their own deposit
 
       const balance2 = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet2)],
         deployer
@@ -701,7 +701,7 @@ describe("BitYield Vault Contract", () => {
       expect(balance2.result).toBeUint(0); // They deposited for someone else
 
       const balance3 = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet3)],
         deployer
@@ -712,7 +712,7 @@ describe("BitYield Vault Contract", () => {
     it("pause/unpause cycle maintains data integrity", () => {
       // Initial deposits
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet1
@@ -720,7 +720,7 @@ describe("BitYield Vault Contract", () => {
 
       // Pause
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "pause-contract",
         [],
         deployer
@@ -728,7 +728,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify paused
       const isPaused1 = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "is-paused",
         [],
         deployer
@@ -737,7 +737,7 @@ describe("BitYield Vault Contract", () => {
 
       // Try to deposit while paused (should fail)
       const failedDeposit = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(500000)],
         wallet2
@@ -746,7 +746,7 @@ describe("BitYield Vault Contract", () => {
 
       // Unpause
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "unpause-contract",
         [],
         deployer
@@ -754,7 +754,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify unpaused
       const isPaused2 = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "is-paused",
         [],
         deployer
@@ -763,7 +763,7 @@ describe("BitYield Vault Contract", () => {
 
       // Deposit should work now
       const successfulDeposit = simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(500000)],
         wallet2
@@ -772,7 +772,7 @@ describe("BitYield Vault Contract", () => {
 
       // Verify original balance still intact
       const balance1 = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-balance",
         [Cl.principal(wallet1)],
         deployer
@@ -783,7 +783,7 @@ describe("BitYield Vault Contract", () => {
     it("TVL accurately reflects multiple concurrent operations", () => {
       // Get initial TVL
       let tvl = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-total-tvl",
         [],
         deployer
@@ -792,19 +792,19 @@ describe("BitYield Vault Contract", () => {
 
       // Multiple deposits
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet1
       );
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(2000000)],
         wallet2
       );
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet3), Cl.uint(3000000)],
         wallet1
@@ -812,7 +812,7 @@ describe("BitYield Vault Contract", () => {
 
       // Check TVL increased correctly
       tvl = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-total-tvl",
         [],
         deployer
@@ -821,13 +821,13 @@ describe("BitYield Vault Contract", () => {
 
       // Multiple withdrawals
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(500000)],
         wallet1
       );
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "withdraw-sbtc",
         [Cl.uint(1000000)],
         wallet2
@@ -835,7 +835,7 @@ describe("BitYield Vault Contract", () => {
 
       // Check TVL decreased correctly
       tvl = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-total-tvl",
         [],
         deployer
@@ -846,7 +846,7 @@ describe("BitYield Vault Contract", () => {
     it("depositor count increments correctly with mixed operations", () => {
       // Get initial count
       let count = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-depositor-count",
         [],
         deployer
@@ -855,14 +855,14 @@ describe("BitYield Vault Contract", () => {
 
       // New user deposits (should increment)
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(1000000)],
         wallet1
       );
 
       count = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-depositor-count",
         [],
         deployer
@@ -871,14 +871,14 @@ describe("BitYield Vault Contract", () => {
 
       // Same user deposits again (should NOT increment)
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-sbtc",
         [Cl.uint(500000)],
         wallet1
       );
 
       count = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-depositor-count",
         [],
         deployer
@@ -887,14 +887,14 @@ describe("BitYield Vault Contract", () => {
 
       // deposit-for new user (should increment)
       simnet.callPublicFn(
-        "bityield-vault",
+        "yielder",
         "deposit-for",
         [Cl.principal(wallet2), Cl.uint(1000000)],
         wallet1
       );
 
       count = simnet.callReadOnlyFn(
-        "bityield-vault",
+        "yielder",
         "get-depositor-count",
         [],
         deployer

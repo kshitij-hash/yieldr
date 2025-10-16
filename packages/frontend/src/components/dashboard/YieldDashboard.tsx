@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProtocolCard } from "./ProtocolCard";
 import { YieldCharts } from "./YieldCharts";
 import { useYields } from "@/hooks/useYields";
+import { DataSourceNotice } from "@/components/notifications/DataSourceNotice";
 
 export const YieldDashboard: React.FC = () => {
   const { yields, isLoading, error, lastUpdated, refetch, sortedByApy } =
@@ -128,32 +129,37 @@ export const YieldDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Data Source Notice */}
+      <DataSourceNotice />
+
       {/* Header */}
-      <div className="flex items-center justify-between animate-fade-in">
-        <div>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-            Yield Opportunities
-          </h2>
-          <p className="text-lg text-muted-foreground mt-2">
-            Discover the best sBTC yields across DeFi protocols
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>{formatLastUpdated(lastUpdated)}</span>
+      <div className="space-y-4 animate-fade-in">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">
+              Yield Opportunities
+            </h2>
+            <p className="text-base md:text-lg text-muted-foreground mt-2">
+              Discover the best sBTC yields across DeFi protocols
+            </p>
           </div>
-          <Button
-            onClick={refetch}
-            disabled={isLoading}
-            size="sm"
-            variant="outline"
-          >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>{formatLastUpdated(lastUpdated)}</span>
+            </div>
+            <Button
+              onClick={refetch}
+              disabled={isLoading}
+              size="sm"
+              variant="outline"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""} md:mr-2`}
+              />
+              <span className="hidden md:inline">Refresh</span>
+            </Button>
+          </div>
         </div>
       </div>
 

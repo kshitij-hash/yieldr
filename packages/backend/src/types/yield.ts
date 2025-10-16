@@ -24,7 +24,6 @@ export enum ProtocolType {
  * Supported protocols
  */
 export enum Protocol {
-  ZEST = 'zest',
   VELAR = 'velar',
   ALEX = 'alex',
 }
@@ -237,7 +236,6 @@ export const HealthCheckSchema = z.object({
       model: z.string().optional(),
     }),
     protocols: z.object({
-      zest: z.enum(['up', 'down', 'unknown']),
       velar: z.enum(['up', 'down', 'unknown']),
       alex: z.enum(['up', 'down', 'unknown']),
     }),
@@ -284,5 +282,9 @@ export type ApiResponse<T> = {
   metadata: {
     timestamp: number;
     version: string;
+    dataSource?: {
+      network: string;
+      note?: string;
+    };
   };
 };

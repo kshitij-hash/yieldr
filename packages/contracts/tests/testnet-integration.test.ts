@@ -5,7 +5,7 @@ import { Cl } from "@stacks/transactions";
  * BitYield Vault - Testnet Integration Tests
  *
  * These tests interact with the REAL deployed contract on testnet:
- * STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ.bityield-vault-updated
+ * STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ.yielder
  *
  * Prerequisites:
  * - Contract must be deployed on testnet
@@ -14,7 +14,7 @@ import { Cl } from "@stacks/transactions";
  */
 
 const CONTRACT_ADDRESS = "STKBH2VR2QNEFQDNCVRS7K3DJVQ3WYB38GTENFFQ";
-const CONTRACT_NAME = "bityield-vault-updated";
+const CONTRACT_NAME = "yielder";
 const SBTC_CONTRACT = "SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token";
 
 // Get test accounts
